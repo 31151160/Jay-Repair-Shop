@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <title>Jay Repair Shop | Business Tracking System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body{background:#f1f5f9}
+    .panel{background:white;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.05)}
+    .field{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:10px 12px;background:white}
+    .btn{border-radius:9px;padding:10px 14px;font-weight:700}
+    .navbtn{display:block;width:100%;text-align:left;padding:11px 13px;border-radius:9px;font-weight:600;color:#cbd5e1}
+    .navbtn.active,.navbtn:hover{background:#1e293b;color:white}
+    .tablewrap{overflow-x:auto}
+    th,td{padding:11px 12px;text-align:left;border-bottom:1px solid #e2e8f0;font-size:13px;white-space:nowrap}
+    th{color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;background:#f8fafc}
+    .stat{font-size:25px;font-weight:800;color:#0f172a}
+  </style>
+</head>
+<body class="min-h-screen text-slate-800">
+  <header class="bg-slate-950 text-white px-5 py-4 flex flex-wrap justify-between items-center gap-3">
+    <div>
+      <p class="text-sky-300 text-xs font-bold tracking-[.2em] uppercase">Jay Repair Shop</p>
+      <h1 class="text-xl sm:text-2xl font-extrabold">Business Tracking System</h1>
+    </div>
+    <div class="flex gap-2 items-center">
+      <a href="index.html" class="btn bg-slate-800 hover:bg-slate-700 text-white text-sm">← Main Website</a>
+      <button id="logoutBtn" class="hidden btn bg-red-600 hover:bg-red-500 text-white text-sm">Log out</button>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-4 sm:p-6">
+    <section id="loginPanel" class="panel max-w-md mx-auto mt-12 p-7">
+      <div class="text-center mb-6">
+        <div class="text-4xl mb-3">🔐</div>
+        <h2 class="text-2xl font-extrabold">Owner access</h2>
+        <p class="text-sm text-slate-500 mt-2">Enter the owner password to unlock the private tracking system.</p>
+      </div>
+      <form id="loginForm" class="space-y-4">
+        <label class="block text-sm font-semibold">Password
+          <input id="loginPassword" class="field mt-1" type="password" autocomplete="current-password" required placeholder="Owner password">
+        </label>
+        <button class="btn w-full bg-sky-600 hover:bg-sky-500 text-white" type="submit">Unlock Tracking System</button>
+        <p id="loginMessage" class="text-sm text-red-600" role="status"></p>
+      </form>
+      <p class="text-xs text-slate-500 mt-5 border-t pt-4">Password-only access. Your records sync with your Supabase database.</p>
+    </section>
+
+    <section id="appShell" class="hidden grid grid-cols-1 lg:grid-cols-[230px_1fr] gap-5">
+      <aside class="bg-slate-950 rounded-2xl p-4 h-fit">
+        <p class="text-xs text-slate-400 uppercase tracking-widest font-bold px-3 mb-3">Management</p>
+        <nav class="space-y-1" id="sideNav">
+          <button class="navbtn active" data-view="overview">▦ Overview</button>
+          <button class="navbtn" data-view="repairs">🛠 Repair jobs</button>
+          <button class="navbtn" data-view="screens">📱 Screen purchases</button>
+          <button class="navbtn" data-view="suppliers">🚚 Suppliers</button>
+          <button class="navbtn" data-view="technicians">👨‍🔧 Technicians</button>
+          <button class="navbtn" data-view="finance">💰 Revenue & expenses</button>
+          <button class="navbtn" data-view="warranty">🛡 Warranty claims</button>
+          <button class="navbtn" data-view="bookings">📅 Customer bookings</button>
+        </nav>
+        <div class="mt-6 border-t border-slate-800 pt-4 text-xs text-slate-400">Private owner workspace</div>
+      </aside>
+
+      <div class="min-w-0">
+        <div id="notice" class="hidden mb-4 rounded-xl p-3 text-sm"></div>
+
+        <section id="view-overview" class="view space-y-5">
+          <div class="flex flex-wrap justify-between items-end gap-3">
+            <div><p class="text-sky-700 text-xs font-bold uppercase tracking-widest">Business intelligence</p><h2 class="text-3xl font-extrabold">Overview</h2><p class="text-slate-500 text-sm mt-1">A live snapshot of your repair shop records.</p></div>
+            <button id="refreshBtn" onclick="refreshAll()" class="btn bg-slate-900 text-white hover:bg-slate-700">↻ Refresh data</button>
+          </div>
+          <div class="grid grid-cols-2 xl:grid-cols-4 gap-3">
+            <div class="panel p-5"><p class="text-xs text-slate-500 font-semibold">Repair tickets</p><p id="kpiRepairs" class="stat mt-2">—</p></div>
+            <div class="panel p-5"><p class="text-xs text-slate-500 font-semibold">Technicians</p><p id="kpiTechs" class="stat mt-2">—</p></div>
+            <div class="panel p-5"><p class="text-xs text-slate-500 font-semibold">Revenue recorded</p><p id="kpiRevenue" class="stat mt-2">—</p></div>
+            <div class="panel p-5"><p class="text-xs text-slate-500 font-semibold">Expenses recorded</p><p id="kpiExpenses" class="stat mt-2">—</p></div>
+          </div>
+          <div class="grid xl:grid-cols-2 gap-5">
+            <div class="panel p-5"><h3 class="font-extrabold text-lg mb-3">Recent repair tickets</h3><div id="recentRepairs" class="text-sm text-slate-500">Loading…</div></div>
+            <div class="panel p-5"><h3 class="font-extrabold text-lg mb-3">Quick business notes</h3><ul class="text-sm text-slate-600 space-y-2 list-disc pl-5"><li>Record each screen purchase and link it to its supplier.</li><li>Assign repair work to a technician to track workload.</li><li>Record income and expenses to monitor cash flow.</li><li>Log warranty claims so follow-ups are not missed.</li></ul></div>
+          </div>
+        </section>
+
+        <section id="view-repairs" class="view hidden space-y-4">
+          <div><h2 class="text-2xl font-extrabold">Repair jobs & technician assignments</h2><p class="text-sm text-slate-500">Manage repair tickets saved in your Supabase database.</p></div>
+          <div class="panel p-5">
+            <h3 class="font-bold mb-3">Add repair ticket</h3>
+            <form id="ticketForm" class="grid md:grid-cols-2 gap-3">
+              <input class="field" name="ticket_id" required placeholder="Ticket ID (e.g. Seabela 2313)">
+              <input class="field" name="phone" placeholder="Customer phone">
+              <input class="field" name="device" placeholder="Device / model">
+              <select class="field" name="status"><option>Received</option><option>In Progress</option><option>Waiting for Parts</option><option>Complete</option></select>
+              <input class="field md:col-span-2" name="details" placeholder="Repair details">
+              <button class="btn bg-sky-600 text-white md:col-span-2" type="submit">Save repair ticket</button>
+            </form>
+          </div>
+          <div class="panel p-5">
+            <form id="jobForm" class="grid md:grid-cols-2 gap-3">
+              <input class="field" name="ticket_id" required placeholder="Existing Ticket ID">
+              <select class="field" name="technician_id" id="jobTechnician" required><option value="">Choose technician</option></select>
+              <input class="field" name="work_note" placeholder="Work / task note">
+              <button class="btn bg-sky-600 text-white" type="submit">Save technician assignment</button>
+            </form>
+          </div>
+          <div class="panel p-5"><div class="tablewrap"><table class="w-full"><thead><tr><th>Ticket ID</th><th>Customer phone</th><th>Device</th><th>Status</th><th>Details</th></tr></thead><tbody id="repairRows"><tr><td colspan="5">Loading…</td></tr></tbody></table></div></div>
+          <div class="panel p-5"><h3 class="font-bold mb-2">Technician assignments</h3><div class="tablewrap"><table class="w-full"><thead><tr><th>Ticket</th><th>Technician</th><th>Work note</th><th>Date assigned</th></tr></thead><tbody id="jobRows"></tbody></table></div></div>
+        </section>
+
+        <section id="view-screens" class="view hidden space-y-4">
+          <div><h2 class="text-2xl font-extrabold">Screen purchases</h2><p class="text-sm text-slate-500">Track replacement screens, costs, quantities and supplier references.</p></div>
+          <div class="panel p-5"><form id="screenForm" class="grid md:grid-cols-2 gap-3">
+            <input class="field" name="screen_model" required placeholder="Screen model / compatible device">
+            <select class="field" name="supplier_id" id="screenSupplier"><option value="">Supplier (optional)</option></select>
+            <input class="field" name="quantity" type="number" min="1" required placeholder="Quantity">
+            <input class="field" name="unit_cost" type="number" min="0" step=".01" required placeholder="Unit cost (R)">
+            <input class="field" name="purchase_date" type="date" required>
+            <input class="field" name="reference" placeholder="Invoice / order reference">
+            <button class="btn bg-sky-600 text-white md:col-span-2">Add screen purchase</button>
+          </form></div>
+          <div class="panel p-5"><div class="tablewrap"><table class="w-full"><thead><tr><th>Date</th><th>Screen</th><th>Supplier</th><th>Qty</th><th>Unit cost</th><th>Total</th><th>Reference</th></tr></thead><tbody id="screenRows"></tbody></table></div></div>
+        </section>
+
+        <section id="view-suppliers" class="view hidden space-y-4">
+          <div><h2 class="text-2xl font-extrabold">Suppliers</h2><p class="text-sm text-slate-500">Keep supplier contacts and account details in one place.</p></div>
+          <div class="panel p-5"><form id="supplierForm" class="grid md:grid-cols-2 gap-3">
+            <input class="field" name="name" required placeholder="Supplier / company name">
+            <input class="field" name="contact_person" placeholder="Contact person">
+            <input class="field" name="phone" placeholder="Phone number">
+            <input class="field" name="email" type="email" placeholder="Email address">
+            <input class="field md:col-span-2" name="notes" placeholder="Products supplied / notes">
+            <button class="btn bg-sky-600 text-white md:col-span-2">Add supplier</button>
+          </form></div>
+          <div class="panel p-5"><div class="tablewrap"><table class="w-full"><thead><tr><th>Supplier</th><th>Contact</th><th>Phone</th><th>Email</th><th>Notes</th></tr></thead><tbody id="supplierRows"></tbody></table></div></div>
+        </section>
+
+        <section id="view-technicians" class="view hidden space-y-4">
+          <div><h2 class="text-2xl font-extrabold">Technician performance</h2><p class="text-sm text-slate-500">Register technicians and count the repair jobs assigned to each person.</p></div>
+          <div class="panel p-5"><form id="technicianForm" class="grid md:grid-cols-2 gap-3">
+            <input class="field" name="full_name" required placeholder="Technician full name">
+            <input class="field" name="phone" placeholder="Phone number">
+            <input class="field" name="specialty" placeholder="Specialty (e.g. iPhone screens)">
+            <select class="field" name="active"><option value="true">Active</option><option value="false">Inactive</option></select>
+            <button class="btn bg-sky-600 text-white md:col-span-2">Add technician</button>
+          </form></div>
+          <div class="panel p-5"><div class="tablewrap"><table class="w-full"><thead><tr><th>Technician</th><th>Specialty</th><th>Phone</th><th>Jobs assigned</th><th>Active</th></tr></thead><tbody id="technicianRows"></tbody></table></div></div>
+        </section>
+
+        <section id="view-finance" class="view hidden space-y-4">
+          <div><h2 class="text-2xl font-extrabold">Revenue & expenses</h2><p class="text-sm text-slate-500">Record money received and money spent. Values are stored in South African rand (ZAR).</p></div>
+          <div class="panel p-5"><form id="financeForm" class="grid md:grid-cols-2 gap-3">
+            <select class="field" name="entry_type" required><option value="income">Revenue / income</option><option value="expense">Expense</option></select>
+            <input class="field" name="amount" type="number" min=".01" step=".01" required placeholder="Amount (R)">
+            <input class="field" name="category" required placeholder="Category (repair, parts, rent…)">
+            <input class="field" name="entry_date" type="date" required>
+            <input class="field md:col-span-2" name="description" placeholder="Description / reference">
+            <button class="btn bg-sky-600 text-white md:col-span-2">Save financial entry</button>
+          </form></div>
+          <div class="grid md:grid-cols-3 gap-3"><div class="panel p-4"><p class="text-xs text-slate-500">Total income</p><p id="financeIncome" class="stat">R0.00</p></div><div class="panel p-4"><p class="text-xs text-slate-500">Total expenses</p><p id="financeExpense" class="stat">R0.00</p></div><div class="panel p-4"><p class="text-xs text-slate-500">Net balance</p><p id="financeNet" class="stat">R0.00</p></div></div>
+          <div class="panel p-5"><div class="tablewrap"><table class="w-full"><thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead><tbody id="financeRows"></tbody></table></div></div>
+        </section>
+
+        <section id="view-warranty" class="view hidden space-y-4">
+          <div><h2 class="text-2xl font-extrabold">Warranty claims</h2><p class="text-sm text-slate-500">Log claims for repaired or sold devices and track their status.</p></div>
+          <div class="panel p-5"><form id="warrantyForm" class="grid md:grid-cols-2 gap-3">
+            <input class="field" name="customer_name" required placeholder="Customer name">
+            <input class="field" name="phone" required placeholder="Customer phone">
+            <input class="field" name="device" required placeholder="Device / model">
+            <input class="field" name="claim_date" type="date" required>
+            <input class="field" name="ticket_id" placeholder="Related Ticket ID (optional)">
+            <select class="field" name="status"><option>New</option><option>Under Review</option><option>Approved</option><option>Rejected</option><option>Resolved</option></select>
+            <textarea class="field md:col-span-2" name="issue" required placeholder="Describe the warranty issue"></textarea>
+            <button class="btn bg-sky-600 text-white md:col-span-2">Add warranty claim</button>
+          </form></div>
+          <div class="panel p-5"><div class="tablewrap"><table class="w-full"><thead><tr><th>Date</th><th>Customer</th><th>Phone</th><th>Device</th><th>Ticket</th><th>Status</th><th>Issue</th></tr></thead><tbody id="warrantyRows"></tbody></table></div></div>
+        </section>
+
+        <section id="view-bookings" class="view hidden space-y-4">
+          <div><h2 class="text-2xl font-extrabold">Customer bookings</h2><p class="text-sm text-slate-500">Bookings created in this tracking system are listed here.</p></div>
+          <div class="panel p-5"><div class="tablewrap"><table class="w-full"><thead><tr><th>Ticket ID</th><th>Phone</th><th>Device</th><th>Status</th><th>Details</th><th>Created</th></tr></thead><tbody id="bookingRows"></tbody></table></div></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+  const OWNER_PASSWORD = '$20Billion';
+  const SUPABASE_URL = 'https://oqenkywwzxplblpwdshe.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_MA3VYpUG-MUa_1jEiTcZTg_zNz8hNIk';
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const $ = id => document.getElementById(id);
+
+  let cache = {
+    tickets: [],
+    suppliers: [],
+    screens: [],
+    technicians: [],
+    jobs: [],
+    finance: [],
+    warranty: []
+  };
+
+  const money = n => new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(Number(n || 0));
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+
+  function notice(message, bad = false) {
+    $('notice').textContent = message;
+    $('notice').className = 'mb-4 rounded-xl p-3 text-sm ' + (bad ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700');
+    $('notice').classList.remove('hidden');
+  }
+
+  function rows(id, html) {
+    $(id).innerHTML = html || '<tr><td colspan="8" class="text-slate-400">No records yet.</td></tr>';
+  }
+
+  async function refreshAll() {
+    const [
+      ticketsRes,
+      suppliersRes,
+      screensRes,
+      techniciansRes,
+      jobsRes,
+      financeRes,
+      warrantyRes
+    ] = await Promise.all([
+      supabase.from('tickets').select('*').order('created_at', { ascending: false }),
+      supabase.from('suppliers').select('*').order('name', { ascending: true }),
+      supabase.from('screen_purchases').select('*').order('purchase_date', { ascending: false }),
+      supabase.from('technicians').select('*').order('full_name', { ascending: true }),
+      supabase.from('technician_jobs').select('*').order('created_at', { ascending: false }),
+      supabase.from('finance_entries').select('*').order('entry_date', { ascending: false }),
+      supabase.from('warranty_claims').select('*').order('claim_date', { ascending: false })
+    ]);
+
+    const err = [ticketsRes, suppliersRes, screensRes, techniciansRes, jobsRes, financeRes, warrantyRes].find(r => r.error)?.error;
+    if (err) {
+      notice('Database error: ' + err.message, true);
+      return;
+    }
+
+    cache = {
+      tickets: ticketsRes.data || [],
+      suppliers: suppliersRes.data || [],
+      screens: screensRes.data || [],
+      technicians: techniciansRes.data || [],
+      jobs: jobsRes.data || [],
+      finance: financeRes.data || [],
+      warranty: warrantyRes.data || []
+    };
+
+    renderAll();
+  }
+
+  function renderAll() {
+    $('kpiRepairs').textContent = cache.tickets.length;
+    $('kpiTechs').textContent = cache.technicians.length;
+
+    const income = cache.finance.filter(x => x.entry_type === 'income').reduce((a, x) => a + Number(x.amount), 0);
+    const expense = cache.finance.filter(x => x.entry_type === 'expense').reduce((a, x) => a + Number(x.amount), 0);
+
+    $('kpiRevenue').textContent = money(income);
+    $('kpiExpenses').textContent = money(expense);
+    $('financeIncome').textContent = money(income);
+    $('financeExpense').textContent = money(expense);
+    $('financeNet').textContent = money(income - expense);
+
+    $('recentRepairs').innerHTML = cache.tickets.slice(0, 6).map(t =>
+      `<div class="py-2 border-b last:border-0">
+        <b>${esc(t.ticket_id || 'Ticket')}</b> · ${esc(t.device || 'Device not specified')}
+        <div class="text-xs text-slate-500">${esc(t.status || 'Received')} · ${esc(t.phone || '')}</div>
+      </div>`
+    ).join('') || 'No repair tickets added yet.';
+
+    rows('repairRows', cache.tickets.map(t =>
+      `<tr>
+        <td>${esc(t.ticket_id)}</td>
+        <td>${esc(t.phone)}</td>
+        <td>${esc(t.device)}</td>
+        <td>${esc(t.status)}</td>
+        <td>${esc(t.details)}</td>
+      </tr>`
+    ).join(''));
+
+    rows('bookingRows', cache.tickets.map(t =>
+      `<tr>
+        <td>${esc(t.ticket_id)}</td>
+        <td>${esc(t.phone)}</td>
+        <td>${esc(t.device)}</td>
+        <td>${esc(t.status)}</td>
+        <td>${esc(t.details)}</td>
+        <td>${esc(t.created_at ? new Date(t.created_at).toLocaleString() : '')}</td>
+      </tr>`
+    ).join(''));
+
+    rows('supplierRows', cache.suppliers.map(s =>
+      `<tr>
+        <td>${esc(s.name)}</td>
+        <td>${esc(s.contact_person)}</td>
+        <td>${esc(s.phone)}</td>
+        <td>${esc(s.email)}</td>
+        <td>${esc(s.notes)}</td>
+      </tr>`
+    ).join(''));
+
+    $('screenSupplier').innerHTML = '<option value="">Supplier (optional)</option>' +
+      cache.suppliers.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
+
+    rows('screenRows', cache.screens.map(s => {
+      const sup = cache.suppliers.find(x => x.id === s.supplier_id);
+      const total = s.total_cost ?? (Number(s.quantity) * Number(s.unit_cost));
+      return `<tr>
+        <td>${esc(s.purchase_date)}</td>
+        <td>${esc(s.screen_model)}</td>
+        <td>${esc(sup?.name || '—')}</td>
+        <td>${esc(s.quantity)}</td>
+        <td>${money(s.unit_cost)}</td>
+        <td>${money(total)}</td>
+        <td>${esc(s.reference)}</td>
+      </tr>`;
+    }).join(''));
+
+    $('jobTechnician').innerHTML = '<option value="">Choose technician</option>' +
+      cache.technicians.map(t => `<option value="${esc(t.id)}">${esc(t.full_name)}</option>`).join('');
+
+    rows('technicianRows', cache.technicians.map(t =>
+      `<tr>
+        <td>${esc(t.full_name)}</td>
+        <td>${esc(t.specialty)}</td>
+        <td>${esc(t.phone)}</td>
+        <td>${cache.jobs.filter(j => j.technician_id === t.id).length}</td>
+        <td>${t.active ? 'Yes' : 'No'}</td>
+      </tr>`
+    ).join(''));
+
+    rows('jobRows', cache.jobs.map(j =>
+      `<tr>
+        <td>${esc(j.ticket_id)}</td>
+        <td>${esc(cache.technicians.find(t => t.id === j.technician_id)?.full_name || 'Unknown')}</td>
+        <td>${esc(j.work_note)}</td>
+        <td>${esc(j.created_at ? new Date(j.created_at).toLocaleDateString() : '')}</td>
+      </tr>`
+    ).join(''));
+
+    rows('financeRows', cache.finance.map(f =>
+      `<tr>
+        <td>${esc(f.entry_date)}</td>
+        <td>${esc(f.entry_type)}</td>
+        <td>${esc(f.category)}</td>
+        <td>${esc(f.description)}</td>
+        <td>${money(f.amount)}</td>
+      </tr>`
+    ).join(''));
+
+    rows('warrantyRows', cache.warranty.map(w =>
+      `<tr>
+        <td>${esc(w.claim_date)}</td>
+        <td>${esc(w.customer_name)}</td>
+        <td>${esc(w.phone)}</td>
+        <td>${esc(w.device)}</td>
+        <td>${esc(w.ticket_id)}</td>
+        <td>${esc(w.status)}</td>
+        <td>${esc(w.issue)}</td>
+      </tr>`
+    ).join(''));
+  }
+
+  function showView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    $('view-' + name).classList.remove('hidden');
+    document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  }
+
+  document.querySelectorAll('.navbtn').forEach(b => b.addEventListener('click', () => showView(b.dataset.view)));
+
+  function showApp() {
+    $('loginPanel').classList.add('hidden');
+    $('appShell').classList.remove('hidden');
+    $('logoutBtn').classList.remove('hidden');
+    refreshAll();
+  }
+
+  $('loginForm').addEventListener('submit', e => {
+    e.preventDefault();
+    if ($('loginPassword').value !== OWNER_PASSWORD) {
+      $('loginMessage').textContent = 'Incorrect password. Please try again.';
+      return;
+    }
+    sessionStorage.setItem('jayRepairTrackingUnlocked', 'yes');
+    $('loginMessage').textContent = '';
+    showApp();
+  });
+
+  $('logoutBtn').addEventListener('click', () => {
+    sessionStorage.removeItem('jayRepairTrackingUnlocked');
+    $('appShell').classList.add('hidden');
+    $('logoutBtn').classList.add('hidden');
+    $('loginPanel').classList.remove('hidden');
+    $('loginPassword').value = '';
+  });
+
+  function bindInsert(formId, table, mapper = v => v) {
+    $(formId).addEventListener('submit', async e => {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const payload = mapper(Object.fromEntries(new FormData(form).entries()));
+
+      const { error } = await supabase.from(table).insert(payload);
+      if (error) {
+        notice('Failed to save record: ' + error.message, true);
+        return;
+      }
+
+      form.reset();
+      notice('Record successfully saved to Supabase.');
+      await refreshAll();
+    });
+  }
+
+  bindInsert('ticketForm', 'tickets');
+  bindInsert('supplierForm', 'suppliers');
+  bindInsert('screenForm', 'screen_purchases', v => ({
+    ...v,
+    quantity: Number(v.quantity),
+    unit_cost: Number(v.unit_cost),
+    supplier_id: v.supplier_id || null
+  }));
+  bindInsert('technicianForm', 'technicians', v => ({ ...v, active: v.active === 'true' }));
+  bindInsert('financeForm', 'finance_entries', v => ({ ...v, amount: Number(v.amount) }));
+  bindInsert('warrantyForm', 'warranty_claims', v => ({ ...v, ticket_id: v.ticket_id || null }));
+  bindInsert('jobForm', 'technician_jobs');
+
+  window.refreshAll = refreshAll;
+
+  if (sessionStorage.getItem('jayRepairTrackingUnlocked') === 'yes') {
+    showApp();
+  }
+</script>
+</body>
+</html>
