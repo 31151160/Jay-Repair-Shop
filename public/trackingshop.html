@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<title>Jay Repair Shop | Shop Tracking</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body{background:#f1f5f9}
+  .panel{background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.05)}
+  .field{width:100%;border:1px solid #cbd5e1;border-radius:9px;padding:10px 12px;background:#fff}
+  .field-sm{border:1px solid #cbd5e1;border-radius:8px;padding:7px 10px;background:#fff;font-size:13px}
+  .btn{border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}
+  .btn-sm{border-radius:7px;padding:6px 10px;font-weight:700;font-size:12px;cursor:pointer}
+  .navbtn{display:block;width:100%;text-align:left;padding:12px;border-radius:10px;font-weight:700;color:#cbd5e1;cursor:pointer}
+  .navbtn.active,.navbtn:hover{background:#334155;color:#fff}
+  .tablewrap{overflow-x:auto}
+  th,td{padding:11px 12px;text-align:left;border-bottom:1px solid #e2e8f0;font-size:13px;white-space:nowrap}
+  th{color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.06em;background:#f8fafc}
+  .stat{font-size:24px;font-weight:800;color:#0f172a}
+  .view.hidden{display:none}
+  #appShell.hidden{display:none!important}
+  #sideBackdrop:not(.open){display:none!important}
+  #menuToggle.hidden,#logoutBtn.hidden,#mainSiteLink.hidden{display:none!important}
+  body:not(.shop-unlocked) #appShell{display:none!important}
+  .modal-backdrop.hidden{display:none}
+  /* Visual-only dashboard polish */
+  body{background:linear-gradient(135deg,#f8fafc 0%,#eef2ff 55%,#f1f5f9 100%);background-attachment:fixed}
+  .panel{border:1px solid #e5eaf2;border-radius:20px;box-shadow:0 12px 32px rgba(15,23,42,.055);transition:box-shadow .2s ease,border-color .2s ease}
+  .panel:hover{box-shadow:0 16px 38px rgba(15,23,42,.085);border-color:#d8e1ee}
+  header{background:linear-gradient(115deg,#0f172a 0%,#172554 58%,#064e3b 120%)!important;box-shadow:0 8px 28px rgba(15,23,42,.16)}
+  .navbtn{display:flex;align-items:center;gap:10px;padding:13px 14px;border:1px solid transparent;transition:background .18s ease,color .18s ease,transform .18s ease}
+  .navbtn:hover{transform:translateX(2px);background:#1e293b;color:#fff}
+  .navbtn.active{background:linear-gradient(100deg,#047857,#0f766e);color:#fff;box-shadow:0 7px 18px rgba(16,185,129,.18)}
+  .field,.field-sm{transition:border-color .15s ease,box-shadow .15s ease}
+  .field:focus,.field-sm:focus{outline:none;border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.13)}
+  .btn{transition:transform .15s ease,filter .15s ease,box-shadow .15s ease}
+  .btn:hover{filter:brightness(1.04);transform:translateY(-1px);box-shadow:0 5px 12px rgba(15,23,42,.12)}
+  .stat{letter-spacing:-.035em}
+  #sidePanel{z-index:60}
+  #sideBackdrop{display:none}
+  #menuToggle{display:none}
+  @media(max-width:1023px){
+    #appShell{display:block}
+    #sidePanel{position:fixed;inset:0 auto 0 0;width:min(300px,86vw);height:100dvh;overflow-y:auto;border-radius:0 22px 22px 0;transform:translateX(-105%);transition:transform .25s ease;box-shadow:18px 0 45px rgba(2,6,23,.25)}
+    #sidePanel.open{transform:translateX(0)}
+    #sideBackdrop.open{display:block;position:fixed;inset:0;background:rgba(2,6,23,.56);backdrop-filter:blur(3px);z-index:55}
+    #menuToggle{display:inline-flex;align-items:center;justify-content:center}
+    #appContent{width:100%;min-width:0}
+    main{padding:14px!important}
+    .view{scroll-margin-top:12px}
+  }
+  @media(min-width:1024px){
+    #sidePanel{position:sticky;top:18px;align-self:start;max-height:calc(100vh - 36px);overflow-y:auto}
+  }
+</style>
+</head>
+<body class="min-h-screen text-slate-800">
+<header class="bg-slate-950 text-white px-5 py-4 flex flex-wrap justify-between items-center gap-3">
+  <div><p class="text-emerald-300 text-xs font-bold tracking-[.2em] uppercase">Jay Repair Shop</p><h1 class="text-xl sm:text-2xl font-extrabold">📦 Shop Tracking System</h1></div>
+  <div class="flex gap-2 items-center">
+    <button id="menuToggle" type="button" aria-label="Open shop navigation" aria-expanded="false" class="btn bg-slate-800 hover:bg-slate-700 text-white text-sm">☰ <span class="hidden sm:inline">Menu</span></button>
+    <a id="mainSiteLink" href="./index.html" class="hidden btn bg-slate-800 hover:bg-slate-700 text-white text-sm">🌐 Main Website</a>
+    <button id="logoutBtn" class="hidden btn bg-red-600 hover:bg-red-500 text-white text-sm">🔒 Log out</button>
+  </div>
+</header>
+<main class="max-w-7xl mx-auto p-4 sm:p-6">
+  <section id="loginPanel" class="panel max-w-md mx-auto mt-12 p-7">
+    <div class="text-center mb-6"><div class="text-4xl mb-3">🔐</div><h2 class="text-2xl font-extrabold">Shop owner access</h2><p class="text-sm text-slate-500 mt-2">Enter the owner password to open Shop Tracking.</p></div>
+    <form id="loginForm" class="space-y-4">
+      <label class="block text-sm font-semibold">Password<input id="loginPassword" class="field mt-1" type="password" autocomplete="current-password" required placeholder="Owner password"></label>
+      <button class="btn w-full bg-emerald-600 hover:bg-emerald-500 text-white" type="submit">🔓 Unlock Shop Tracking</button>
+      <p id="loginMessage" class="text-sm text-red-600" role="status"></p>
+    </form>
+    <p class="text-xs text-slate-500 mt-5 border-t pt-4">Shop records sync with your existing Supabase project and website records.</p>
+  </section>
+
+  <div id="sideBackdrop" aria-hidden="true"></div>
+  <section id="appShell" class="hidden grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5">
+    <aside id="sidePanel" class="bg-slate-950 rounded-2xl p-4 h-fit">
+      <p class="text-xs text-slate-400 uppercase tracking-widest font-bold px-3 mb-3">📦 Shop Tracking</p>
+      <nav id="sideNav" class="space-y-1">
+        <button class="navbtn active" data-view="shop-overview">📊 Shop overview</button>
+        <button class="navbtn" data-view="shop-inventory">📦 Stock and inventory</button>
+        <button class="navbtn" data-view="shop-orders">🛒 Customer orders</button>
+        <button class="navbtn" data-view="shop-layby">🤝 Lay-by plans</button>
+        <button class="navbtn" data-view="shop-delivery">🚚 Delivery tracking</button>
+        <button class="navbtn" data-view="shop-warranty">🛡️ Warranty claims</button>
+        <button class="navbtn" data-view="shop-sales">📈 Sales & Net report</button>
+        <button class="navbtn" data-view="shop-expenses">💸 Shop expenses</button>
+      </nav>
+      <div class="mt-6 border-t border-slate-800 pt-4 text-xs text-slate-400">🔐 Private shop workspace</div>
+    </aside>
+
+    <div id="appContent" class="min-w-0">
+      <!-- Top Bar Filter & Sync -->
+      <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
+        <div id="notice" class="hidden rounded-xl p-3 text-sm flex-1" role="status"></div>
+        <div class="flex flex-wrap items-center gap-2 ml-auto">
+          <select id="periodMode" class="field-sm font-semibold text-slate-700" title="Time period">
+            <option value="all" selected>All time</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+          <input id="periodMonth" type="month" class="field-sm text-slate-700" title="Select month">
+          <select id="periodYear" class="field-sm text-slate-700" title="Select year"></select>
+          <button id="refreshBtn" class="btn bg-slate-900 text-white hover:bg-slate-700 text-sm">↻ Refresh data</button>
+        </div>
+      </div>
+
+      <!-- OVERVIEW -->
+      <section id="view-shop-overview" class="view space-y-5">
+        <div class="flex flex-wrap justify-between items-end gap-2">
+          <div>
+            <p class="text-emerald-700 text-xs font-bold uppercase tracking-widest">📦 Electronics store</p>
+            <h2 class="text-3xl font-extrabold">Shop overview</h2>
+            <p id="overviewPeriodLabel" class="text-sm text-slate-500 mt-1">Showing all-time totals (paid orders & lay-bys side by side).</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="panel p-5">
+            <p class="text-xs text-slate-500 font-semibold">🛒 Paid orders count</p>
+            <p id="shopKpiOrders" class="stat mt-2">0</p>
+          </div>
+          <div class="panel p-5">
+            <p class="text-xs text-slate-500 font-semibold">🛒 Total from Orders (paid in full)</p>
+            <p id="shopKpiOrdersMoney" class="stat mt-2 text-sky-700">R0,00</p>
+          </div>
+
+          <div class="panel p-5">
+            <p class="text-xs text-slate-500 font-semibold">🤝 Active lay-bys</p>
+            <p id="shopKpiLaybys" class="stat mt-2">0</p>
+          </div>
+          <div class="panel p-5">
+            <p class="text-xs text-slate-500 font-semibold">🤝 Total from Lay-by (paid so far)</p>
+            <p id="shopKpiLaybyMoney" class="stat mt-2 text-purple-700">R0,00</p>
+          </div>
+
+          <div class="panel p-5">
+            <p class="text-xs text-slate-500 font-semibold">📦 Stock items</p>
+            <p id="shopKpiStock" class="stat mt-2">0</p>
+          </div>
+          <div class="panel p-5">
+            <p class="text-xs text-slate-500 font-semibold">⏳ Lay-by balance owed</p>
+            <p id="shopKpiLaybyBalance" class="stat mt-2 text-amber-700">R0,00</p>
+          </div>
+
+          <div class="panel p-5">
+            <p class="text-xs text-slate-500 font-semibold">💸 Shop expenses + stock amount</p>
+            <p id="shopKpiExpenses" class="stat mt-2 text-red-700">R0,00</p>
+          </div>
+          <div class="panel p-5">
+            <p class="text-xs text-slate-500 font-semibold">📦 Stock amount</p>
+            <p id="shopKpiStockDeducted" class="stat mt-2 text-rose-400">R0,00</p>
+          </div>
+
+          <div class="panel p-5 md:col-span-2 md:w-1/2 md:mx-auto text-center">
+            <p class="text-xs text-slate-500 font-semibold">🧾 Net profit</p>
+            <p id="shopKpiNet" class="stat mt-2">R0,00</p>
+          </div>
+        </div>
+
+        <div class="grid xl:grid-cols-2 gap-5">
+          <div class="panel p-5"><h3 class="font-extrabold text-lg mb-3">🧾 Recent orders & lay-bys</h3><div id="shopRecentOrders" class="text-sm text-slate-500">Loading…</div></div>
+          <div class="panel p-5"><h3 class="font-extrabold text-lg mb-3">⚡ Quick actions</h3><div class="grid grid-cols-2 gap-2 text-sm">
+            <button class="btn bg-emerald-600 text-white" data-go="shop-inventory">📦 Manage stock</button>
+            <button class="btn bg-sky-600 text-white" data-go="shop-orders">🛒 Add an order</button>
+            <button class="btn bg-purple-600 text-white" data-go="shop-layby">🤝 Manage lay-by</button>
+            <button class="btn bg-amber-600 text-white" data-go="shop-expenses">💸 Record expense</button>
+            <button class="btn bg-slate-800 text-white col-span-2" data-go="shop-sales">📈 View sales & net report</button>
+          </div></div>
+        </div>
+      </section>
+
+      <!-- INVENTORY -->
+      <section id="view-shop-inventory" class="view hidden space-y-4">
+        <div><h2 class="text-2xl font-extrabold">📦 Stock and inventory</h2><p class="text-sm text-slate-500">Add, edit, or delete products directly here on the website.</p></div>
+        <div class="panel p-5"><h3 class="font-bold mb-3">➕ Add stock item</h3>
+          <form id="shopInventoryForm" class="grid md:grid-cols-2 gap-3">
+            <input class="field" name="sku" required placeholder="SKU / stock code">
+            <input class="field" name="product_name" required placeholder="Product name / model">
+            <select class="field" name="category" required><option value="">Choose category</option><option>Cellphone</option><option>Laptop</option><option>Computer</option><option>Accessory</option><option>Other</option></select>
+            <input class="field" name="quantity" type="number" min="0" step="1" required placeholder="Quantity in stock">
+            <input class="field" name="cost_price" type="number" min="0" step=".01" required placeholder="Unit selling price (R)">
+            <input class="field" name="selling_price" type="number" min="0" step=".01" required placeholder="Unit cost price (R)">
+            <input class="field" name="supplier_name" placeholder="Supplier (optional)">
+            <button class="btn bg-emerald-600 text-white md:col-span-2" type="submit">💾 Save stock item</button>
+          </form>
+        </div>
+        <div class="panel p-5">
+          <div class="flex flex-wrap justify-between items-center gap-3 mb-3">
+            <h3 class="font-bold">📋 Current inventory</h3>
+            <div class="flex flex-wrap items-center gap-4 text-sm font-bold">
+              <span id="shopStockValue" class="text-slate-700">Stock cost value: R0,00</span>
+              <span id="shopStockPotential" class="text-emerald-700">Total stock sales value: R0,00</span>
+            </div>
+          </div>
+          <div class="tablewrap"><table class="w-full"><thead><tr><th>SKU</th><th>Product</th><th>Category</th><th>Qty</th><th>Selling price</th><th>Cost price</th><th>Supplier</th><th>Stock cost value</th><th>Actions</th></tr></thead><tbody id="shopInventoryRows"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- ORDERS -->
+      <section id="view-shop-orders" class="view hidden space-y-4">
+        <div class="flex flex-wrap justify-between items-end gap-3">
+          <div>
+            <h2 class="text-2xl font-extrabold">🛒 Customer orders</h2>
+            <p class="text-sm text-slate-500">Only paid/received orders count in order totals. Click <b>Order Received</b> on any row to move its money into Total Orders.</p>
+          </div>
+          <div class="panel px-4 py-2.5 flex items-center gap-4">
+            <div><span class="text-[11px] uppercase text-slate-400 font-bold block">Total Orders Money</span><span id="ordersTabTotal" class="text-base font-extrabold text-sky-700">R0,00</span></div>
+            <div class="border-l pl-4"><span class="text-[11px] uppercase text-slate-400 font-bold block">Total Lay-by Money</span><span id="ordersTabLaybyTotal" class="text-base font-extrabold text-purple-700">R0,00</span></div>
+          </div>
+        </div>
+
+        <div class="panel p-5"><h3 class="font-bold mb-3">➕ Add a shop order</h3>
+          <form id="shopOrderForm" class="grid md:grid-cols-2 gap-3">
+            <input class="field" name="order_ref" required placeholder="Shop order reference (e.g. SHOP-1001)">
+            <input class="field" name="order_date" type="date" required>
+            <input class="field" name="customer_name" required placeholder="Customer full name">
+            <input class="field" name="phone" placeholder="Customer phone number">
+            <input id="orderProductInput" list="inventoryProductOptions" class="field" name="product_name" required placeholder="Goods / product name (matches inventory)">
+            <datalist id="inventoryProductOptions"></datalist>
+            <input id="orderQtyInput" class="field" name="quantity" type="number" min="1" step="1" value="1" required placeholder="Quantity">
+            <input id="orderTotalInput" class="field" name="order_total" type="number" min="0" step=".01" required placeholder="Order total (R)">
+            <select class="field" name="status" required>
+              <option>Pending Payment</option>
+              <option>Order Received</option>
+              <option>Confirmed / Paid</option>
+              <option>Preparing</option>
+              <option>Ready for Collection</option>
+              <option>Dispatched</option>
+              <option>In Transit</option>
+              <option>Delivered</option>
+              <option>Cancelled</option>
+            </select>
+            <input class="field" name="courier" placeholder="Courier / delivery service (e.g. PAXI)">
+            <input class="field" name="tracking_number" placeholder="Courier tracking number">
+            <textarea class="field md:col-span-2" name="notes" rows="2" placeholder="Order notes / collection point / delivery instructions"></textarea>
+            <button class="btn bg-emerald-600 hover:bg-emerald-500 text-white md:col-span-2" type="submit">💾 Save shop order</button>
+          </form>
+        </div>
+
+        <div class="panel p-5"><h3 class="font-bold mb-3">📋 Customer order list</h3><div class="tablewrap"><table class="w-full"><thead><tr><th>Order ref</th><th>Date</th><th>Customer</th><th>Phone</th><th>Goods</th><th>Qty</th><th>Total</th><th>Status</th><th>Courier</th><th>Tracking no.</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="shopOrderRows"></tbody></table></div></div>
+      </section>
+
+      <!-- LAY-BY -->
+      <section id="view-shop-layby" class="view hidden space-y-4">
+        <div class="flex flex-wrap justify-between items-end gap-3">
+          <div>
+            <h2 class="text-2xl font-extrabold">🤝 Lay-by plans</h2>
+            <p class="text-sm text-slate-500">Lay-by payments are tracked separately from full orders so you can see who paid what.</p>
+          </div>
+          <div class="panel px-4 py-2.5 flex items-center gap-4">
+            <div><span class="text-[11px] uppercase text-slate-400 font-bold block">Total Lay-by Money</span><span id="laybyTabMoneySide" class="text-base font-extrabold text-purple-700">R0,00</span></div>
+            <div class="border-l pl-4"><span class="text-[11px] uppercase text-slate-400 font-bold block">Total Orders Money</span><span id="laybyTabOrdersSide" class="text-base font-extrabold text-sky-700">R0,00</span></div>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-3">
+          <div class="panel p-5"><p class="text-xs text-slate-500">🤝 Active lay-bys</p><p id="laybyActiveCount" class="stat mt-2">0</p></div>
+          <div class="panel p-5"><p class="text-xs text-slate-500">💵 Total lay-by paid</p><p id="laybyPaidTotal" class="stat mt-2 text-purple-700">R0,00</p></div>
+          <div class="panel p-5"><p class="text-xs text-slate-500">⏳ Remaining balance</p><p id="laybyBalanceTotal" class="stat mt-2 text-amber-700">R0,00</p></div>
+        </div>
+
+        <div class="panel p-5">
+          <h3 class="font-bold mb-3">➕ Create a new lay-by plan</h3>
+          <form id="laybyCreateForm" class="grid md:grid-cols-2 gap-3">
+            <input class="field" name="layby_ref" required placeholder="Lay-by ref (e.g. LAYBY-101)">
+            <input class="field" name="start_date" type="date" required>
+            <input class="field" name="customer_name" required placeholder="Customer full name">
+            <input class="field" name="phone" placeholder="Customer phone / WhatsApp">
+            <input id="laybyProductInput" list="inventoryProductOptions" class="field" name="product_name" required placeholder="Item on lay-by">
+            <input id="laybyQtyInput" class="field" name="quantity" type="number" min="1" step="1" value="1" required placeholder="Quantity">
+            <input id="laybyTotalInput" class="field" name="total_price" type="number" min="0" step=".01" required placeholder="Total lay-by price (R)">
+            <input id="laybyDepositInput" class="field" name="amount_paid" type="number" min="0" step=".01" value="0" required placeholder="Initial deposit / amount paid (R)">
+            <select class="field" name="status" required>
+              <option>Active Lay-by</option>
+              <option>Completed / Paid in Full</option>
+              <option>Cancelled</option>
+            </select>
+            <input class="field" name="due_date" type="date" placeholder="Target completion date">
+            <textarea class="field md:col-span-2" name="notes" rows="2" placeholder="Payment schedule notes / item condition / agreement notes"></textarea>
+            <button class="btn bg-purple-600 hover:bg-purple-500 text-white md:col-span-2" type="submit">💾 Save lay-by plan</button>
+          </form>
+        </div>
+
+        <div class="panel p-5">
+          <h3 class="font-bold mb-3">💳 Record a lay-by payment / update status</h3>
+          <form id="laybyPaymentForm" class="grid md:grid-cols-3 gap-3">
+            <input class="field" name="layby_ref" required placeholder="Existing lay-by ref (e.g. LAYBY-101)">
+            <input class="field" name="add_payment" type="number" min="0" step=".01" value="0" required placeholder="Additional payment received today (R)">
+            <select class="field" name="status" required>
+              <option>Active Lay-by</option>
+              <option>Completed / Paid in Full</option>
+              <option>Cancelled</option>
+            </select>
+            <input class="field md:col-span-3" name="notes" placeholder="Payment note (e.g. Paid R500 cash on 25 Nov)">
+            <button class="btn bg-emerald-600 hover:bg-emerald-500 text-white md:col-span-3" type="submit">💾 Update lay-by payment</button>
+          </form>
+        </div>
+
+        <div class="panel p-5">
+          <h3 class="font-bold mb-3">📋 Lay-by ledger</h3>
+          <div class="tablewrap">
+            <table class="w-full">
+              <thead>
+                <tr>
+                  <th>Lay-by ref</th>
+                  <th>Date</th>
+                  <th>Customer</th>
+                  <th>Phone</th>
+                  <th>Item</th>
+                  <th>Qty</th>
+                  <th>Total price</th>
+                  <th>Paid so far</th>
+                  <th>Balance left</th>
+                  <th>Status</th>
+                  <th>Notes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="laybyRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- DELIVERY -->
+      <section id="view-shop-delivery" class="view hidden space-y-4">
+        <div><h2 class="text-2xl font-extrabold">🚚 Delivery tracking</h2><p class="text-sm text-slate-500">Update order delivery status, press Order Received when received, or edit/delete records here.</p></div>
+        <div class="panel p-5"><h3 class="font-bold mb-3">📝 Update order & delivery progress</h3>
+          <form id="shopOrderUpdateForm" class="grid md:grid-cols-2 gap-3">
+            <input class="field" name="order_ref" required placeholder="Existing shop order reference">
+            <select class="field" name="status" required>
+              <option>Pending Payment</option>
+              <option>Order Received</option>
+              <option>Confirmed / Paid</option>
+              <option>Preparing</option>
+              <option>Ready for Collection</option>
+              <option>Dispatched</option>
+              <option>In Transit</option>
+              <option>Delivered</option>
+              <option>Cancelled</option>
+            </select>
+            <input class="field" name="courier" placeholder="Courier / delivery service (e.g. PAXI)">
+            <input class="field" name="tracking_number" placeholder="Courier tracking number">
+            <input class="field md:col-span-2" name="notes" placeholder="Latest delivery update / collection point">
+            <button class="btn bg-sky-600 text-white md:col-span-2" type="submit">💾 Save delivery update</button>
+          </form>
+        </div>
+        <div class="panel p-5"><h3 class="font-bold mb-3">📍 Delivery status board</h3><div class="tablewrap"><table class="w-full"><thead><tr><th>Order ref</th><th>Customer</th><th>Product</th><th>Status</th><th>Courier</th><th>Tracking number</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="shopDeliveryRows"></tbody></table></div></div>
+      </section>
+
+      <!-- WARRANTY CLAIMS -->
+      <section id="view-shop-warranty" class="view hidden space-y-4">
+        <div><h2 class="text-2xl font-extrabold">🛡️ Warranty claims</h2><p class="text-sm text-slate-500">Log customer warranty requests, repairs, or replacements directly in Supabase.</p></div>
+        <div class="panel p-5"><h3 class="font-bold mb-3">➕ Log a warranty claim</h3>
+          <form id="shopWarrantyForm" class="grid md:grid-cols-2 gap-3">
+            <input class="field" name="claim_ref" required placeholder="Claim reference (e.g. WAR-1001)">
+            <input class="field" name="claim_date" type="date" required>
+            <input class="field" name="customer_name" required placeholder="Customer full name">
+            <input class="field" name="phone" placeholder="Customer phone number">
+            <input class="field" name="product_name" required placeholder="Device / product under warranty">
+            <select class="field" name="status" required>
+              <option>Claim Logged</option>
+              <option>Under Review</option>
+              <option>Accepted / Repair in Progress</option>
+              <option>Replaced</option>
+              <option>Resolved / Closed</option>
+              <option>Rejected</option>
+            </select>
+            <textarea class="field md:col-span-2" name="notes" rows="2" placeholder="Issue description / defect details / resolution notes"></textarea>
+            <button class="btn bg-indigo-600 hover:bg-indigo-500 text-white md:col-span-2" type="submit">💾 Save warranty claim</button>
+          </form>
+        </div>
+        <div class="panel p-5"><h3 class="font-bold mb-3">📋 Warranty claims ledger</h3><div class="tablewrap"><table class="w-full"><thead><tr><th>Claim ref</th><th>Date</th><th>Customer</th><th>Phone</th><th>Product</th><th>Status</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="shopWarrantyRows"></tbody></table></div></div>
+      </section>
+
+      <!-- SALES & NET REPORT -->
+      <section id="view-shop-sales" class="view hidden space-y-4">
+        <div>
+          <h2 class="text-2xl font-extrabold">📈 Sales & Net report</h2>
+          <p id="salesPeriodSubtitle" class="text-sm text-slate-500">Full orders and lay-by money side by side, minus shop expenses for net profit.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-3">
+          <div class="panel p-5">
+            <p class="text-xs text-slate-500 font-semibold">🛒 Total Money — Full Orders (paid in full)</p>
+            <p id="shopOrderSalesTotal" class="stat mt-2 text-sky-700">R0,00</p>
+            <p id="shopOrderPaidCountLabel" class="text-xs text-slate-400 mt-1">0 paid orders counted</p>
+          </div>
+          <div class="panel p-5">
+            <p class="text-xs text-slate-500 font-semibold">🤝 Total Money — Lay-by Plans (paid so far)</p>
+            <p id="shopLaybySalesTotal" class="stat mt-2 text-purple-700">R0,00</p>
+            <p id="shopLaybyCountLabel" class="text-xs text-slate-400 mt-1">0 lay-by plans</p>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-3">
+          <div class="panel p-5"><p class="text-xs text-slate-500">💰 Combined money in</p><p id="shopSalesTotal" class="stat mt-2">R0,00</p></div>
+          <div class="panel p-5"><p class="text-xs text-slate-500">📦 Item cost (COGS)</p><p id="shopCogsTotal" class="stat mt-2 text-slate-700">R0,00</p></div>
+          <div class="panel p-5"><p class="text-xs text-slate-500">💸 Shop expenses</p><p id="shopReportExpenseTotal" class="stat mt-2 text-red-700">R0,00</p></div>
+          <div class="panel p-5"><p class="text-xs text-slate-500">🧾 Net profit</p><p id="shopNetReportTotal" class="stat mt-2">R0,00</p></div>
+        </div>
+
+        <div class="panel p-5"><h3 class="font-bold mb-3">📊 Paid orders & lay-by ledger</h3><div class="tablewrap"><table class="w-full"><thead><tr><th>Date</th><th>Ref</th><th>Source</th><th>Customer</th><th>Goods</th><th>Qty</th><th>Status</th><th>Money counted</th></tr></thead><tbody id="shopSalesRows"></tbody></table></div></div>
+      </section>
+
+      <!-- EXPENSES -->
+      <section id="view-shop-expenses" class="view hidden space-y-4">
+        <div><h2 class="text-2xl font-extrabold">💸 Shop expenses</h2><p class="text-sm text-slate-500">Record, edit, or delete shop expenses directly here.</p></div>
+        <div class="panel p-5"><h3 class="font-bold mb-3">➕ Record a shop expense</h3>
+          <form id="shopExpenseForm" class="grid md:grid-cols-2 gap-3">
+            <input class="field" name="amount" type="number" min=".01" step=".01" required placeholder="Amount (R)">
+            <input class="field" name="category" required placeholder="Expense category (stock, courier, packaging…)">
+            <input class="field" name="entry_date" type="date" required>
+            <input class="field" name="description" placeholder="Description / receipt reference">
+            <button class="btn bg-amber-600 text-white md:col-span-2" type="submit">💾 Save shop expense</button>
+          </form>
+        </div>
+        <div class="grid md:grid-cols-2 gap-3"><div class="panel p-5"><p class="text-xs text-slate-500">💸 Total shop expenses</p><p id="shopExpenseTotal" class="stat mt-2">R0,00</p></div><div class="panel p-5"><p class="text-xs text-slate-500">🧾 Expense entries</p><p id="shopExpenseCount" class="stat mt-2">0</p></div></div>
+        <div class="panel p-5"><h3 class="font-bold mb-3">📋 Expense history</h3><div class="tablewrap"><table class="w-full"><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Actions</th></tr></thead><tbody id="shopExpenseRows"></tbody></table></div></div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<!-- INLINE WEBSITE RECORD EDITOR MODAL -->
+<div id="editModal" class="modal-backdrop hidden fixed inset-0 bg-slate-950/60 flex items-center justify-center p-4 z-50">
+  <div class="panel max-w-lg w-full p-6 space-y-4">
+    <div class="flex items-center justify-between border-b pb-3">
+      <h3 id="editModalTitle" class="text-lg font-extrabold">✏️ Edit record</h3>
+      <button id="closeEditModalBtn" type="button" class="btn-sm bg-slate-200 hover:bg-slate-300 text-slate-800">✕ Close</button>
+    </div>
+    <form id="editModalForm" class="space-y-3"></form>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const OWNER_PASSWORD = '$20Billion';
+const SUPABASE_URL = 'https://oqenkywwzxplblpwdshe.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_MA3VYpUG-MUa_1jEiTcZTg_zNz8hNIk';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = id => document.getElementById(id);
+const money = n => new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR'}).format(Number(n || 0));
+const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+let shopOrders = [], shopInventory = [], shopExpenses = [], shopLaybys = [], shopWarranties = [];
+let activeEditContext = null;
+
+const now = new Date();
+const defaultMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+const defaultYearNum = now.getFullYear();
+
+function initPeriodControls(){
+  const mInput = $('periodMonth');
+  const ySelect = $('periodYear');
+  if(mInput && !mInput.value) mInput.value = defaultMonthStr;
+  if(ySelect && !ySelect.options.length){
+    for(let y = defaultYearNum + 1; y >= defaultYearNum - 4; y--){
+      const opt = document.createElement('option');
+      opt.value = String(y);
+      opt.textContent = String(y);
+      if(y === defaultYearNum) opt.selected = true;
+      ySelect.appendChild(opt);
+    }
+  }
+  syncPeriodInputVisibility();
+}
+
+function syncPeriodInputVisibility(){
+  const mode = $('periodMode')?.value || 'all';
+  $('periodMonth')?.classList.toggle('hidden', mode !== 'monthly');
+  $('periodYear')?.classList.toggle('hidden', mode !== 'yearly');
+}
+
+function matchesSelectedPeriod(dateStr){
+  const mode = $('periodMode')?.value || 'all';
+  if(mode === 'all') return true;
+  const clean = String(dateStr || '').trim();
+  if(!clean) return true;
+  if(mode === 'monthly'){
+    const selectedMonth = $('periodMonth')?.value || defaultMonthStr;
+    return clean.startsWith(selectedMonth);
+  }
+  if(mode === 'yearly'){
+    const selectedYear = $('periodYear')?.value || String(defaultYearNum);
+    return clean.startsWith(selectedYear + '-');
+  }
+  return true;
+}
+
+function getPeriodLabel(){
+  const mode = $('periodMode')?.value || 'all';
+  if(mode === 'monthly') return `Monthly view (${$('periodMonth')?.value || defaultMonthStr})`;
+  if(mode === 'yearly') return `Yearly view (${$('periodYear')?.value || defaultYearNum})`;
+  return 'All-time view';
+}
+
+const isCancelledStatus = status => String(status || '').trim().toLowerCase() === 'cancelled';
+
+const PAID_ORDER_STATUSES = new Set([
+  'order received',
+  'confirmed / paid',
+  'preparing',
+  'ready for collection',
+  'dispatched',
+  'in transit',
+  'delivered'
+]);
+
+const isPaidFullOrder = status => {
+  const s = String(status || '').trim().toLowerCase();
+  return !isCancelledStatus(s) && PAID_ORDER_STATUSES.has(s);
+};
+
+function notice(message,bad=false){
+  const el=$('notice'); el.textContent=message;
+  el.className='rounded-xl p-3 text-sm flex-1 '+(bad?'bg-red-50 text-red-700':'bg-emerald-50 text-emerald-700');
+}
+function tableRows(id,html,cols=6){$(id).innerHTML=html || `<tr><td colspan="${cols}" class="text-slate-400">No records yet.</td></tr>`;}
+function closeShopMenu(){
+  $('sidePanel')?.classList.remove('open');
+  $('sideBackdrop')?.classList.remove('open');
+  $('menuToggle')?.setAttribute('aria-expanded','false');
+}
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
+  $('view-'+name).classList.remove('hidden');
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
+  closeShopMenu();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+$('menuToggle')?.addEventListener('click',()=>{
+  const open = !$('sidePanel').classList.contains('open');
+  $('sidePanel').classList.toggle('open',open);
+  $('sideBackdrop').classList.toggle('open',open);
+  $('menuToggle').setAttribute('aria-expanded',String(open));
+});
+$('sideBackdrop')?.addEventListener('click',closeShopMenu);
+document.addEventListener('keydown',e=>{if(e.key==='Escape') closeShopMenu();});
+document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.go)));
+
+$('periodMode')?.addEventListener('change', () => { syncPeriodInputVisibility(); renderAll(); });
+$('periodMonth')?.addEventListener('change', renderAll);
+$('periodYear')?.addEventListener('change', renderAll);
+
+function syncInventorySuggestions(){
+  const datalist = $('inventoryProductOptions');
+  if(!datalist) return;
+  datalist.innerHTML = shopInventory
+    .map(p => `<option value="${esc(p.product_name)}">${esc(p.sku)} · Sell ${money(p.cost_price)} / Cost ${money(p.selling_price)} (${esc(p.quantity)} left)</option>`)
+    .join('');
+}
+
+function autofillPrice(productInputId, qtyInputId, totalInputId){
+  const productName = ($(productInputId)?.value || '').trim().toLowerCase();
+  const qty = Math.max(1, Number($(qtyInputId)?.value || 1));
+  if(!productName || !$(totalInputId)) return;
+  const matched = shopInventory.find(p => String(p.product_name || '').trim().toLowerCase() === productName);
+  if(matched && matched.cost_price != null){
+    $(totalInputId).value = (Number(matched.cost_price) * qty).toFixed(2);
+  }
+}
+
+$('orderProductInput')?.addEventListener('input', () => autofillPrice('orderProductInput', 'orderQtyInput', 'orderTotalInput'));
+$('orderQtyInput')?.addEventListener('input', () => autofillPrice('orderProductInput', 'orderQtyInput', 'orderTotalInput'));
+$('laybyProductInput')?.addEventListener('input', () => autofillPrice('laybyProductInput', 'laybyQtyInput', 'laybyTotalInput'));
+$('laybyQtyInput')?.addEventListener('input', () => autofillPrice('laybyProductInput', 'laybyQtyInput', 'laybyTotalInput'));
+
+function findInventoryMatch(productName){
+  const target = String(productName || '').trim().toLowerCase();
+  if(!target) return null;
+  return shopInventory.find(p => String(p.product_name || '').trim().toLowerCase() === target) || null;
+}
+
+async function adjustInventoryStock(productName, deltaQty){
+  const item = findInventoryMatch(productName);
+  if(!item || !deltaQty) return;
+  const nextQty = Math.max(0, Number(item.quantity || 0) + Number(deltaQty));
+  item.quantity = nextQty;
+  if(item.id){
+    await supabase.from('shop_inventory').update({ quantity: nextQty }).eq('id', item.id);
+  }
+}
+
+async function refreshAll(){
+  $('refreshBtn').disabled=true; $('refreshBtn').textContent='↻ Loading…';
+  const [ordersRes,inventoryRes,expensesRes,laybysRes,warrantyRes]=await Promise.all([
+    supabase.from('shop_orders').select('*').order('created_at',{ascending:false}),
+    supabase.from('shop_inventory').select('*').order('product_name',{ascending:true}),
+    supabase.from('finance_entries').select('*').eq('entry_type','expense').ilike('category','Shop - %').order('entry_date',{ascending:false}),
+    supabase.from('shop_laybys').select('*').order('created_at',{ascending:false}),
+    supabase.from('warranty_claims').select('*').order('created_at',{ascending:false})
+  ]);
+  const errors=[];
+  if(ordersRes.error) errors.push('Orders: '+ordersRes.error.message);
+  shopOrders = Array.isArray(ordersRes.data) ? ordersRes.data : [];
+
+  if(inventoryRes.error) errors.push('Inventory: '+inventoryRes.error.message);
+  shopInventory = Array.isArray(inventoryRes.data) ? inventoryRes.data : [];
+
+  if(expensesRes.error) errors.push('Expenses: '+expensesRes.error.message);
+  shopExpenses = Array.isArray(expensesRes.data) ? expensesRes.data : [];
+
+  if(laybysRes.error) errors.push('Lay-bys: '+laybysRes.error.message);
+  shopLaybys = Array.isArray(laybysRes.data) ? laybysRes.data : [];
+
+  if(warrantyRes.error) errors.push('Warranty Claims: '+warrantyRes.error.message);
+  shopWarranties = Array.isArray(warrantyRes.data) ? warrantyRes.data : [];
+
+  syncInventorySuggestions();
+  renderAll();
+  if(errors.length) notice('Could not load some Supabase data: '+errors.join(' | '),true);
+  else notice('Shop data synced from Supabase.');
+  $('refreshBtn').disabled=false; $('refreshBtn').textContent='↻ Refresh data';
+}
+
+function renderAll(){
+  const periodText = getPeriodLabel();
+  if($('overviewPeriodLabel')) $('overviewPeriodLabel').textContent = `${periodText} — paid orders and lay-by totals shown side by side.`;
+  if($('salesPeriodSubtitle')) $('salesPeriodSubtitle').textContent = `${periodText} — full paid orders and lay-by money side by side, minus shop expenses for net profit.`;
+
+  const filteredOrders = shopOrders.filter(o => matchesSelectedPeriod(o.order_date));
+  const filteredLaybys = shopLaybys.filter(l => matchesSelectedPeriod(l.start_date));
+  const filteredExpenses = shopExpenses.filter(e => matchesSelectedPeriod(e.entry_date));
+  const filteredWarranties = shopWarranties.filter(w => matchesSelectedPeriod(w.claim_date));
+
+  const paidOrders = filteredOrders.filter(o => isPaidFullOrder(o.status));
+  const orderSalesTotal = paidOrders.reduce((s, o) => s + Number(o.order_total || 0), 0);
+
+  const activeLaybys = filteredLaybys.filter(l => !isCancelledStatus(l.status));
+  const laybyPaidTotal = activeLaybys.reduce((s, l) => s + Number(l.amount_paid || 0), 0);
+  const laybyBalanceTotal = activeLaybys.reduce((s, l) => s + Math.max(0, Number(l.total_price || 0) - Number(l.amount_paid || 0)), 0);
+
+  const combinedMoneyIn = orderSalesTotal + laybyPaidTotal;
+  const expenseTotal = filteredExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+
+  const orderCogs = paidOrders.reduce((sum, o) => {
+    const inv = findInventoryMatch(o.product_name);
+    const unitCost = inv ? Number(inv.selling_price || 0) : 0;
+    return sum + (unitCost * Number(o.quantity || 1));
+  }, 0);
+
+  const laybyCogs = activeLaybys.reduce((sum, l) => {
+    const inv = findInventoryMatch(l.product_name);
+    const unitCost = inv ? Number(inv.selling_price || 0) : 0;
+    const totalPrice = Math.max(1, Number(l.total_price || 1));
+    const paidRatio = Math.min(1, Math.max(0, Number(l.amount_paid || 0) / totalPrice));
+    return sum + (unitCost * Number(l.quantity || 1) * paidRatio);
+  }, 0);
+
+  const totalCost = orderCogs + laybyCogs;
+  const netProfit = combinedMoneyIn - expenseTotal;
+
+  const stockCostValue = shopInventory.reduce((s, p) => s + Number(p.quantity || 0) * Number(p.selling_price || 0), 0);
+  const stockSalesValue = shopInventory.reduce((s, p) => s + Number(p.quantity || 0) * Number(p.cost_price || 0), 0);
+  const openLaybysCount = activeLaybys.filter(l => String(l.status || '').toLowerCase() !== 'completed / paid in full').length;
+  const combinedExpensesAndStock = expenseTotal + stockCostValue;
+
+  $('shopKpiOrders').textContent = paidOrders.length;
+  $('shopKpiLaybys').textContent = openLaybysCount;
+  $('shopKpiStock').textContent = shopInventory.length;
+
+  // Color logic for Net Profit:
+  // Red: Less than expenses + stock amount
+  // Black: Break-even reached up to 400% target
+  // Green: 400% more than expenses (netProfit >= 4 * combinedExpensesAndStock)
+  const target400 = combinedExpensesAndStock * 4;
+  let netColorClass = 'stat mt-2 text-red-600 font-extrabold';
+
+  if (netProfit >= target400 && target400 > 0) {
+    netColorClass = 'stat mt-2 text-emerald-600 font-extrabold';
+  } else if (netProfit >= combinedExpensesAndStock && combinedExpensesAndStock > 0) {
+    netColorClass = 'stat mt-2 text-slate-950 font-extrabold';
+  }
+
+  const netEl = $('shopKpiNet');
+  if(netEl){
+    netEl.textContent = money(netProfit);
+    netEl.className = netColorClass;
+  }
+
+  const netReportEl = $('shopNetReportTotal');
+  if(netReportEl){
+    netReportEl.textContent = money(netProfit);
+    netReportEl.className = netColorClass;
+  }
+
+  $('shopKpiOrdersMoney').textContent = money(orderSalesTotal);
+  $('shopKpiLaybyMoney').textContent = money(laybyPaidTotal);
+  $('shopKpiExpenses').textContent = money(combinedExpensesAndStock);
+  $('shopKpiLaybyBalance').textContent = money(laybyBalanceTotal);
+  if($('shopKpiStockDeducted')) $('shopKpiStockDeducted').textContent = money(stockCostValue);
+
+  if($('ordersTabTotal')) $('ordersTabTotal').textContent = money(orderSalesTotal);
+  if($('ordersTabLaybyTotal')) $('ordersTabLaybyTotal').textContent = money(laybyPaidTotal);
+  if($('laybyTabMoneySide')) $('laybyTabMoneySide').textContent = money(laybyPaidTotal);
+  if($('laybyTabOrdersSide')) $('laybyTabOrdersSide').textContent = money(orderSalesTotal);
+
+  $('shopStockValue').textContent = 'Stock cost value: ' + money(stockCostValue);
+  if($('shopStockPotential')) $('shopStockPotential').textContent = 'Total stock sales value: ' + money(stockSalesValue);
+
+  $('laybyActiveCount').textContent = openLaybysCount;
+  $('laybyPaidTotal').textContent = money(laybyPaidTotal);
+  $('laybyBalanceTotal').textContent = money(laybyBalanceTotal);
+
+  $('shopOrderSalesTotal').textContent = money(orderSalesTotal);
+  $('shopLaybySalesTotal').textContent = money(laybyPaidTotal);
+  if($('shopOrderPaidCountLabel')) $('shopOrderPaidCountLabel').textContent = `${paidOrders.length} paid orders counted`;
+  if($('shopLaybyCountLabel')) $('shopLaybyCountLabel').textContent = `${activeLaybys.length} lay-by plans`;
+  $('shopCogsTotal').textContent = money(totalCost);
+  $('shopReportExpenseTotal').textContent = money(expenseTotal);
+  $('shopSalesTotal').textContent = money(combinedMoneyIn);
+
+  $('shopExpenseTotal').textContent = money(expenseTotal);
+  $('shopExpenseCount').textContent = filteredExpenses.length;
+
+  tableRows('shopInventoryRows', shopInventory.map(p => {
+    const realIdx = shopInventory.indexOf(p);
+    return `<tr>
+      <td><b>${esc(p.sku)}</b></td>
+      <td>${esc(p.product_name)}</td>
+      <td>${esc(p.category)}</td>
+      <td>${esc(p.quantity)}</td>
+      <td>${money(p.cost_price)}</td>
+      <td>${money(p.selling_price)}</td>
+      <td>${esc(p.supplier_name || '—')}</td>
+      <td>${money(Number(p.quantity || 0) * Number(p.selling_price || 0))}</td>
+      <td class="space-x-1">
+        <button type="button" class="btn-sm bg-slate-200 hover:bg-slate-300 text-slate-800" data-edit-type="inventory" data-idx="${realIdx}">✏️ Edit</button>
+        <button type="button" class="btn-sm bg-red-100 hover:bg-red-200 text-red-700" data-del-type="inventory" data-idx="${realIdx}">🗑 Delete</button>
+      </td>
+    </tr>`;
+  }).join(''), 9);
+
+  tableRows('shopOrderRows', filteredOrders.map(o => {
+    const realIdx = shopOrders.indexOf(o);
+    const alreadyReceived = String(o.status || '').trim().toLowerCase() === 'order received';
+    return `<tr>
+      <td><b>${esc(o.order_ref)}</b></td>
+      <td>${esc(o.order_date || '')}</td>
+      <td>${esc(o.customer_name)}</td>
+      <td>${esc(o.phone || '—')}</td>
+      <td>${esc(o.product_name)}</td>
+      <td>${esc(o.quantity)}</td>
+      <td class="font-bold">${money(o.order_total)}</td>
+      <td>${esc(o.status)}</td>
+      <td>${esc(o.courier || '—')}</td>
+      <td>${esc(o.tracking_number || '—')}</td>
+      <td>${esc(o.notes || '')}</td>
+      <td class="space-x-1">
+        ${!alreadyReceived ? `<button type="button" class="btn-sm bg-emerald-600 hover:bg-emerald-500 text-white" data-receive-idx="${realIdx}">✅ Order Received</button>` : `<span class="text-xs font-bold text-emerald-700 px-1">Received</span>`}
+        <button type="button" class="btn-sm bg-slate-200 hover:bg-slate-300 text-slate-800" data-edit-type="order" data-idx="${realIdx}">✏️ Edit</button>
+        <button type="button" class="btn-sm bg-red-100 hover:bg-red-200 text-red-700" data-del-type="order" data-idx="${realIdx}">🗑 Delete</button>
+      </td>
+    </tr>`;
+  }).join(''), 12);
+
+  tableRows('laybyRows', filteredLaybys.map(l => {
+    const realIdx = shopLaybys.indexOf(l);
+    const total = Number(l.total_price || 0);
+    const paid = Number(l.amount_paid || 0);
+    const bal = Math.max(0, total - paid);
+    return `<tr>
+      <td><b>${esc(l.layby_ref)}</b></td>
+      <td>${esc(l.start_date || '')}</td>
+      <td>${esc(l.customer_name)}</td>
+      <td>${esc(l.phone || '—')}</td>
+      <td>${esc(l.product_name)}</td>
+      <td>${esc(l.quantity || 1)}</td>
+      <td>${money(total)}</td>
+      <td class="text-purple-700 font-bold">${money(paid)}</td>
+      <td class="text-amber-700 font-bold">${money(bal)}</td>
+      <td>${esc(l.status)}</td>
+      <td>${esc(l.notes || '')}</td>
+      <td class="space-x-1">
+        <button type="button" class="btn-sm bg-slate-200 hover:bg-slate-300 text-slate-800" data-edit-type="layby" data-idx="${realIdx}">✏️ Edit</button>
+        <button type="button" class="btn-sm bg-red-100 hover:bg-red-200 text-red-700" data-del-type="layby" data-idx="${realIdx}">🗑 Delete</button>
+      </td>
+    </tr>`;
+  }).join(''), 12);
+
+  tableRows('shopDeliveryRows', filteredOrders.map(o => {
+    const realIdx = shopOrders.indexOf(o);
+    const alreadyReceived = String(o.status || '').trim().toLowerCase() === 'order received';
+    return `<tr>
+      <td><b>${esc(o.order_ref)}</b></td>
+      <td>${esc(o.customer_name)}</td>
+      <td>${esc(o.product_name)}</td>
+      <td>${esc(o.status)}</td>
+      <td>${esc(o.courier || '—')}</td>
+      <td>${esc(o.tracking_number || '—')}</td>
+      <td>${esc(o.notes || '')}</td>
+      <td class="space-x-1">
+        ${!alreadyReceived ? `<button type="button" class="btn-sm bg-emerald-600 hover:bg-emerald-500 text-white" data-receive-idx="${realIdx}">✅ Order Received</button>` : ''}
+        <button type="button" class="btn-sm bg-slate-200 hover:bg-slate-300 text-slate-800" data-edit-type="order" data-idx="${realIdx}">✏️ Edit</button>
+        <button type="button" class="btn-sm bg-red-100 hover:bg-red-200 text-red-700" data-del-type="order" data-idx="${realIdx}">🗑 Delete</button>
+      </td>
+    </tr>`;
+  }).join(''), 8);
+
+  tableRows('shopWarrantyRows', filteredWarranties.map(w => {
+    const realIdx = shopWarranties.indexOf(w);
+    return `<tr>
+      <td><b>${esc(w.claim_ref || 'WAR-CLAIM')}</b></td>
+      <td>${esc(w.claim_date || '')}</td>
+      <td>${esc(w.customer_name)}</td>
+      <td>${esc(w.phone || '—')}</td>
+      <td>${esc(w.product_name)}</td>
+      <td>${esc(w.status || 'Claim Logged')}</td>
+      <td>${esc(w.notes || '')}</td>
+      <td class="space-x-1">
+        <button type="button" class="btn-sm bg-slate-200 hover:bg-slate-300 text-slate-800" data-edit-type="warranty" data-idx="${realIdx}">✏️ Edit</button>
+        <button type="button" class="btn-sm bg-red-100 hover:bg-red-200 text-red-700" data-del-type="warranty" data-idx="${realIdx}">🗑 Delete</button>
+      </td>
+    </tr>`;
+  }).join(''), 8);
+
+  const ledgerRows = [
+    ...paidOrders.map(o => ({
+      date: o.order_date || '',
+      ref: o.order_ref,
+      source: 'Full Order',
+      customer: o.customer_name,
+      product: o.product_name,
+      qty: o.quantity,
+      status: o.status,
+      amount: Number(o.order_total || 0)
+    })),
+    ...activeLaybys.filter(l => Number(l.amount_paid || 0) > 0).map(l => ({
+      date: l.start_date || '',
+      ref: l.layby_ref,
+      source: 'Lay-by Paid',
+      customer: l.customer_name,
+      product: l.product_name,
+      qty: l.quantity || 1,
+      status: l.status,
+      amount: Number(l.amount_paid || 0)
+    }))
+  ];
+
+  tableRows('shopSalesRows', ledgerRows.map(r =>
+    `<tr><td>${esc(r.date)}</td><td><b>${esc(r.ref)}</b></td><td>${esc(r.source)}</td><td>${esc(r.customer)}</td><td>${esc(r.product)}</td><td>${esc(r.qty)}</td><td>${esc(r.status)}</td><td class="font-bold">${money(r.amount)}</td></tr>`
+  ).join(''), 8);
+
+  tableRows('shopExpenseRows', filteredExpenses.map(e => {
+    const realIdx = shopExpenses.indexOf(e);
+    return `<tr>
+      <td>${esc(e.entry_date)}</td>
+      <td>${esc(String(e.category || '').replace(/^Shop - /, ''))}</td>
+      <td>${esc(e.description || '')}</td>
+      <td class="font-bold">${money(e.amount)}</td>
+      <td class="space-x-1">
+        <button type="button" class="btn-sm bg-slate-200 hover:bg-slate-300 text-slate-800" data-edit-type="expense" data-idx="${realIdx}">✏️ Edit</button>
+        <button type="button" class="btn-sm bg-red-100 hover:bg-red-200 text-red-700" data-del-type="expense" data-idx="${realIdx}">🗑 Delete</button>
+      </td>
+    </tr>`;
+  }).join(''), 5);
+
+  const recentCombined = [
+    ...filteredOrders.map(o => ({ label: `${o.order_ref} · ${o.product_name}`, sub: `${o.customer_name} · ${o.status} · ${money(o.order_total)}` })),
+    ...filteredLaybys.map(l => ({ label: `Lay-by ${l.layby_ref} · ${l.product_name}`, sub: `${l.customer_name} · Paid ${money(l.amount_paid)} / ${money(l.total_price)}` }))
+  ].slice(0, 6);
+
+  $('shopRecentOrders').innerHTML = recentCombined.map(item =>
+    `<div class="py-2 border-b last:border-0"><b>${esc(item.label)}</b><div class="text-xs text-slate-500">${esc(item.sub)}</div></div>`
+  ).join('') || 'No records in this period yet.';
+
+  bindRowActions();
+}
+
+async function markOrderAsReceived(idx){
+  const o = shopOrders[idx];
+  if(!o) return;
+  const wasPaidOrder = isPaidFullOrder(o.status);
+  const qty = Math.max(1, Number(o.quantity || 1));
+
+  if(!wasPaidOrder){
+    await adjustInventoryStock(o.product_name, -qty);
+  }
+  if(o.id){
+    const { error } = await supabase.from('shop_orders').update({ status: 'Order Received' }).eq('id', o.id);
+    if(error){ notice('Could not update order: '+error.message, true); return; }
+  }
+  await refreshAll();
+  notice(`Order ${o.order_ref} marked Order Received — ${money(o.order_total)} added to Total Orders.`);
+}
+
+async function deleteRecord(type, idx){
+  if(type === 'inventory'){
+    const p = shopInventory[idx];
+    if(!p) return;
+    if(!confirm(`Delete stock item "${p.product_name}" (${p.sku})?`)) return;
+    if(p.id){
+      const { error } = await supabase.from('shop_inventory').delete().eq('id', p.id);
+      if(error){ notice('Could not delete stock item: '+error.message, true); return; }
+    }
+    await refreshAll();
+    notice('Stock item deleted.');
+    return;
+  }
+
+  if(type === 'order'){
+    const o = shopOrders[idx];
+    if(!o) return;
+    if(!confirm(`Delete order "${o.order_ref}" for ${o.customer_name}?`)) return;
+    if(isPaidFullOrder(o.status)){
+      await adjustInventoryStock(o.product_name, Math.max(1, Number(o.quantity || 1)));
+    }
+    if(o.id){
+      const { error } = await supabase.from('shop_orders').delete().eq('id', o.id);
+      if(error){ notice('Could not delete order: '+error.message, true); return; }
+    }
+    await refreshAll();
+    notice('Order deleted and totals updated.');
+    return;
+  }
+
+  if(type === 'layby'){
+    const l = shopLaybys[idx];
+    if(!l) return;
+    if(!confirm(`Delete lay-by plan "${l.layby_ref}" for ${l.customer_name}?`)) return;
+    if(!isCancelledStatus(l.status)){
+      await adjustInventoryStock(l.product_name, Math.max(1, Number(l.quantity || 1)));
+    }
+    const query = l.id ? supabase.from('shop_laybys').delete().eq('id', l.id) : supabase.from('shop_laybys').delete().eq('layby_ref', l.layby_ref);
+    const { error } = await query;
+    if(error){ notice('Could not delete lay-by plan: '+error.message, true); return; }
+    await refreshAll();
+    notice('Lay-by plan deleted and totals updated.');
+    return;
+  }
+
+  if(type === 'warranty'){
+    const w = shopWarranties[idx];
+    if(!w) return;
+    if(!confirm(`Delete warranty claim "${w.claim_ref || 'WAR-CLAIM'}"?`)) return;
+    if(w.id){
+      const { error } = await supabase.from('warranty_claims').delete().eq('id', w.id);
+      if(error){ notice('Could not delete warranty claim: '+error.message, true); return; }
+    }
+    await refreshAll();
+    notice('Warranty claim deleted.');
+    return;
+  }
+
+  if(type === 'expense'){
+    const e = shopExpenses[idx];
+    if(!e) return;
+    if(!confirm(`Delete expense (${money(e.amount)})?`)) return;
+    if(e.id){
+      const { error } = await supabase.from('finance_entries').delete().eq('id', e.id);
+      if(error){ notice('Could not delete expense: '+error.message, true); return; }
+    }
+    await refreshAll();
+    notice('Expense deleted and net profit updated.');
+  }
+}
+
+function openEditModal(type, idx){
+  const form = $('editModalForm');
+  activeEditContext = { type, idx };
+
+  if(type === 'inventory'){
+    const p = shopInventory[idx];
+    if(!p) return;
+    $('editModalTitle').textContent = `✏️ Edit stock item (${p.sku})`;
+    form.innerHTML = `
+      <label class="block text-xs font-bold text-slate-600">SKU<input class="field mt-1" name="sku" value="${esc(p.sku)}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Product name<input class="field mt-1" name="product_name" value="${esc(p.product_name)}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Category
+        <select class="field mt-1" name="category" required>
+          ${['Cellphone','Laptop','Computer','Accessory','Other'].map(c => `<option ${p.category===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </label>
+      <label class="block text-xs font-bold text-slate-600">Quantity in stock<input class="field mt-1" name="quantity" type="number" min="0" step="1" value="${esc(p.quantity)}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Unit selling price (R)<input class="field mt-1" name="cost_price" type="number" min="0" step=".01" value="${esc(p.cost_price)}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Unit cost price (R)<input class="field mt-1" name="selling_price" type="number" min="0" step=".01" value="${esc(p.selling_price)}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Supplier<input class="field mt-1" name="supplier_name" value="${esc(p.supplier_name || '')}"></label>
+      <button class="btn w-full bg-emerald-600 hover:bg-emerald-500 text-white" type="submit">💾 Save changes</button>
+    `;
+  } else if(type === 'order'){
+    const o = shopOrders[idx];
+    if(!o) return;
+    $('editModalTitle').textContent = `✏️ Edit order (${o.order_ref})`;
+    const statuses = ['Pending Payment','Order Received','Confirmed / Paid','Preparing','Ready for Collection','Dispatched','In Transit','Delivered','Cancelled'];
+    form.innerHTML = `
+      <label class="block text-xs font-bold text-slate-600">Order ref<input class="field mt-1" name="order_ref" value="${esc(o.order_ref)}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Order date<input class="field mt-1" name="order_date" type="date" value="${esc(o.order_date || '')}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Customer name<input class="field mt-1" name="customer_name" value="${esc(o.customer_name)}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Phone<input class="field mt-1" name="phone" value="${esc(o.phone || '')}"></label>
+      <label class="block text-xs font-bold text-slate-600">Product name<input class="field mt-1" name="product_name" value="${esc(o.product_name)}" required></label>
+      <div class="grid grid-cols-2 gap-2">
+        <label class="block text-xs font-bold text-slate-600">Quantity<input class="field mt-1" name="quantity" type="number" min="1" step="1" value="${esc(o.quantity || 1)}" required></label>
+        <label class="block text-xs font-bold text-slate-600">Order total (R)<input class="field mt-1" name="order_total" type="number" min="0" step=".01" value="${esc(o.order_total || 0)}" required></label>
+      </div>
+      <label class="block text-xs font-bold text-slate-600">Status
+        <select class="field mt-1" name="status" required>${statuses.map(s => `<option ${o.status===s?'selected':''}>${s}</option>`).join('')}</select>
+      </label>
+      <div class="grid grid-cols-2 gap-2">
+        <label class="block text-xs font-bold text-slate-600">Courier<input class="field mt-1" name="courier" value="${esc(o.courier || '')}"></label>
+        <label class="block text-xs font-bold text-slate-600">Tracking no.<input class="field mt-1" name="tracking_number" value="${esc(o.tracking_number || '')}"></label>
+      </div>
+      <label class="block text-xs font-bold text-slate-600">Notes<input class="field mt-1" name="notes" value="${esc(o.notes || '')}"></label>
+      <button class="btn w-full bg-sky-600 hover:bg-sky-500 text-white" type="submit">💾 Save order changes</button>
+    `;
+  } else if(type === 'layby'){
+    const l = shopLaybys[idx];
+    if(!l) return;
+    $('editModalTitle').textContent = `✏️ Edit lay-by (${l.layby_ref})`;
+    const lStatuses = ['Active Lay-by','Completed / Paid in Full','Cancelled'];
+    form.innerHTML = `
+      <label class="block text-xs font-bold text-slate-600">Lay-by ref<input class="field mt-1" name="layby_ref" value="${esc(l.layby_ref)}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Start date<input class="field mt-1" name="start_date" type="date" value="${esc(l.start_date || '')}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Customer name<input class="field mt-1" name="customer_name" value="${esc(l.customer_name)}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Phone<input class="field mt-1" name="phone" value="${esc(l.phone || '')}"></label>
+      <label class="block text-xs font-bold text-slate-600">Item<input class="field mt-1" name="product_name" value="${esc(l.product_name)}" required></label>
+      <div class="grid grid-cols-3 gap-2">
+        <label class="block text-xs font-bold text-slate-600">Qty<input class="field mt-1" name="quantity" type="number" min="1" step="1" value="${esc(l.quantity || 1)}" required></label>
+        <label class="block text-xs font-bold text-slate-600">Total (R)<input class="field mt-1" name="total_price" type="number" min="0" step=".01" value="${esc(l.total_price || 0)}" required></label>
+        <label class="block text-xs font-bold text-slate-600">Paid (R)<input class="field mt-1" name="amount_paid" type="number" min="0" step=".01" value="${esc(l.amount_paid || 0)}" required></label>
+      </div>
+      <label class="block text-xs font-bold text-slate-600">Status
+        <select class="field mt-1" name="status" required>${lStatuses.map(s => `<option ${l.status===s?'selected':''}>${s}</option>`).join('')}</select>
+      </label>
+      <label class="block text-xs font-bold text-slate-600">Notes<input class="field mt-1" name="notes" value="${esc(l.notes || '')}"></label>
+      <button class="btn w-full bg-purple-600 hover:bg-purple-500 text-white" type="submit">💾 Save lay-by changes</button>
+    `;
+  } else if(type === 'warranty'){
+    const w = shopWarranties[idx];
+    if(!w) return;
+    $('editModalTitle').textContent = `✏️ Edit warranty claim (${w.claim_ref || 'WAR-CLAIM'})`;
+    const wStatuses = ['Claim Logged','Under Review','Accepted / Repair in Progress','Replaced','Resolved / Closed','Rejected'];
+    form.innerHTML = `
+      <label class="block text-xs font-bold text-slate-600">Claim ref<input class="field mt-1" name="claim_ref" value="${esc(w.claim_ref || '')}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Claim date<input class="field mt-1" name="claim_date" type="date" value="${esc(w.claim_date || '')}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Customer name<input class="field mt-1" name="customer_name" value="${esc(w.customer_name)}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Phone<input class="field mt-1" name="phone" value="${esc(w.phone || '')}"></label>
+      <label class="block text-xs font-bold text-slate-600">Product name<input class="field mt-1" name="product_name" value="${esc(w.product_name)}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Status
+        <select class="field mt-1" name="status" required>${wStatuses.map(s => `<option ${w.status===s?'selected':''}>${s}</option>`).join('')}</select>
+      </label>
+      <label class="block text-xs font-bold text-slate-600">Notes<input class="field mt-1" name="notes" value="${esc(w.notes || '')}"></label>
+      <button class="btn w-full bg-indigo-600 hover:bg-indigo-500 text-white" type="submit">💾 Save warranty changes</button>
+    `;
+  } else if(type === 'expense'){
+    const e = shopExpenses[idx];
+    if(!e) return;
+    $('editModalTitle').textContent = '✏️ Edit shop expense';
+    const cleanCat = String(e.category || '').replace(/^Shop - /, '');
+    form.innerHTML = `
+      <label class="block text-xs font-bold text-slate-600">Amount (R)<input class="field mt-1" name="amount" type="number" min=".01" step=".01" value="${esc(e.amount)}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Category<input class="field mt-1" name="category" value="${esc(cleanCat)}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Date<input class="field mt-1" name="entry_date" type="date" value="${esc(e.entry_date || '')}" required></label>
+      <label class="block text-xs font-bold text-slate-600">Description<input class="field mt-1" name="description" value="${esc(e.description || '')}"></label>
+      <button class="btn w-full bg-amber-600 hover:bg-amber-500 text-white" type="submit">💾 Save expense changes</button>
+    `;
+  }
+
+  $('editModal').classList.remove('hidden');
+}
+
+function closeEditModal(){
+  $('editModal').classList.add('hidden');
+  activeEditContext = null;
+}
+
+$('closeEditModalBtn').addEventListener('click', closeEditModal);
+$('editModal').addEventListener('click', e => {
+  if(e.target === $('editModal')) closeEditModal();
+});
+
+$('editModalForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if(!activeEditContext) return;
+  const { type, idx } = activeEditContext;
+  const v = Object.fromEntries(new FormData(e.currentTarget).entries());
+
+  if(type === 'inventory'){
+    const current = shopInventory[idx];
+    const updatedFields = {
+      sku: v.sku.trim(),
+      product_name: v.product_name.trim(),
+      category: v.category,
+      quantity: Number(v.quantity),
+      cost_price: Number(v.cost_price),
+      selling_price: Number(v.selling_price),
+      supplier_name: v.supplier_name.trim()
+    };
+    if(current.id){
+      const { error } = await supabase.from('shop_inventory').update(updatedFields).eq('id', current.id);
+      if(error){ notice('Could not update stock item: '+error.message, true); return; }
+    }
+    closeEditModal();
+    await refreshAll();
+    notice('Stock item updated.');
+    return;
+  }
+
+  if(type === 'order'){
+    const current = shopOrders[idx];
+    const wasPaid = isPaidFullOrder(current.status);
+    const prevQty = Math.max(1, Number(current.quantity || 1));
+
+    const updatedFields = {
+      order_ref: v.order_ref.trim(),
+      order_date: v.order_date,
+      customer_name: v.customer_name.trim(),
+      phone: v.phone.trim(),
+      product_name: v.product_name.trim(),
+      quantity: Math.max(1, Number(v.quantity || 1)),
+      order_total: Number(v.order_total || 0),
+      status: v.status,
+      courier: v.courier.trim(),
+      tracking_number: v.tracking_number.trim(),
+      notes: v.notes.trim()
+    };
+
+    const nowPaid = isPaidFullOrder(updatedFields.status);
+    const nextQty = Math.max(1, Number(updatedFields.quantity || 1));
+
+    if(wasPaid && nowPaid){
+      if(String(current.product_name).trim().toLowerCase() === String(updatedFields.product_name).trim().toLowerCase()){
+        await adjustInventoryStock(updatedFields.product_name, prevQty - nextQty);
+      } else {
+        await adjustInventoryStock(current.product_name, prevQty);
+        await adjustInventoryStock(updatedFields.product_name, -nextQty);
+      }
+    } else if(!wasPaid && nowPaid){
+      await adjustInventoryStock(updatedFields.product_name, -nextQty);
+    } else if(wasPaid && !nowPaid){
+      await adjustInventoryStock(current.product_name, prevQty);
+    }
+
+    if(current.id){
+      const { error } = await supabase.from('shop_orders').update(updatedFields).eq('id', current.id);
+      if(error){ notice('Could not update order: '+error.message, true); return; }
+    }
+    closeEditModal();
+    await refreshAll();
+    notice('Order updated.');
+    return;
+  }
+
+  if(type === 'layby'){
+    const current = shopLaybys[idx];
+    const wasActive = !isCancelledStatus(current.status);
+    const prevQty = Math.max(1, Number(current.quantity || 1));
+
+    const updatedFields = {
+      layby_ref: v.layby_ref.trim(),
+      start_date: v.start_date,
+      customer_name: v.customer_name.trim(),
+      phone: v.phone.trim(),
+      product_name: v.product_name.trim(),
+      quantity: Math.max(1, Number(v.quantity || 1)),
+      total_price: Number(v.total_price || 0),
+      amount_paid: Number(v.amount_paid || 0),
+      status: v.status,
+      notes: v.notes.trim()
+    };
+
+    const nowActive = !isCancelledStatus(updatedFields.status);
+    const nextQty = Math.max(1, Number(updatedFields.quantity || 1));
+
+    if(wasActive && nowActive){
+      if(String(current.product_name).trim().toLowerCase() === String(updatedFields.product_name).trim().toLowerCase()){
+        await adjustInventoryStock(updatedFields.product_name, prevQty - nextQty);
+      } else {
+        await adjustInventoryStock(current.product_name, prevQty);
+        await adjustInventoryStock(updatedFields.product_name, -nextQty);
+      }
+    } else if(!wasActive && nowActive){
+      await adjustInventoryStock(updatedFields.product_name, -nextQty);
+    } else if(wasActive && !nowActive){
+      await adjustInventoryStock(current.product_name, prevQty);
+    }
+
+    const query = current.id ? supabase.from('shop_laybys').update(updatedFields).eq('id', current.id) : supabase.from('shop_laybys').update(updatedFields).eq('layby_ref', current.layby_ref);
+    const { error } = await query;
+    if(error){ notice('Could not update lay-by plan: '+error.message, true); return; }
+    closeEditModal();
+    await refreshAll();
+    notice('Lay-by plan updated.');
+    return;
+  }
+
+  if(type === 'warranty'){
+    const current = shopWarranties[idx];
+    const updatedFields = {
+      claim_ref: v.claim_ref.trim(),
+      claim_date: v.claim_date,
+      customer_name: v.customer_name.trim(),
+      phone: v.phone.trim(),
+      product_name: v.product_name.trim(),
+      status: v.status,
+      notes: v.notes.trim()
+    };
+    if(current.id){
+      const { error } = await supabase.from('warranty_claims').update(updatedFields).eq('id', current.id);
+      if(error){ notice('Could not update warranty claim: '+error.message, true); return; }
+    }
+    closeEditModal();
+    await refreshAll();
+    notice('Warranty claim updated.');
+    return;
+  }
+
+  if(type === 'expense'){
+    const current = shopExpenses[idx];
+    const updatedFields = {
+      amount: Number(v.amount || 0),
+      category: 'Shop - ' + String(v.category || '').trim(),
+      entry_date: v.entry_date,
+      description: v.description.trim()
+    };
+    if(current.id){
+      const { error } = await supabase.from('finance_entries').update(updatedFields).eq('id', current.id);
+      if(error){ notice('Could not update expense: '+error.message, true); return; }
+    }
+    closeEditModal();
+    await refreshAll();
+    notice('Expense updated.');
+  }
+});
+
+function bindRowActions(){
+  document.querySelectorAll('[data-edit-type]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      openEditModal(btn.getAttribute('data-edit-type'), Number(btn.getAttribute('data-idx')));
+    });
+  });
+  document.querySelectorAll('[data-del-type]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      deleteRecord(btn.getAttribute('data-del-type'), Number(btn.getAttribute('data-idx')));
+    });
+  });
+  document.querySelectorAll('[data-receive-idx]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      markOrderAsReceived(Number(btn.getAttribute('data-receive-idx')));
+    });
+  });
+}
+
+async function insertRecord(table,payload,form){
+  const {error}=await supabase.from(table).insert(payload);
+  if(error){notice('Could not save record: '+error.message,true);return false;}
+  form.reset(); notice('Record saved to Supabase.'); await refreshAll();
+  return true;
+}
+
+$('shopInventoryForm').addEventListener('submit',e=>{
+  e.preventDefault(); const f=e.currentTarget,v=Object.fromEntries(new FormData(f).entries());
+  insertRecord('shop_inventory',{sku:v.sku.trim(),product_name:v.product_name.trim(),category:v.category,quantity:Number(v.quantity),cost_price:Number(v.cost_price),selling_price:Number(v.selling_price),supplier_name:v.supplier_name.trim()},f);
+});
+
+$('shopOrderForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const f=e.currentTarget,v=Object.fromEntries(new FormData(f).entries());
+  const qty=Math.max(1,Number(v.quantity||1));
+  const saved=await insertRecord('shop_orders',{
+    order_ref:v.order_ref.trim(),
+    order_date:v.order_date,
+    customer_name:v.customer_name.trim(),
+    phone:v.phone.trim(),
+    product_name:v.product_name.trim(),
+    quantity:qty,
+    order_total:Number(v.order_total),
+    status:v.status,
+    courier:v.courier.trim(),
+    tracking_number:v.tracking_number.trim(),
+    notes:v.notes.trim()
+  },f);
+  if(!saved) return;
+
+  if(isPaidFullOrder(v.status)){
+    await adjustInventoryStock(v.product_name, -qty);
+    await refreshAll();
+    notice('Order saved and counted in Total Orders.');
+  } else {
+    notice('Order saved as Pending/Cancelled; counted in Total Orders once paid/received.');
+  }
+});
+
+$('laybyCreateForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.currentTarget, v = Object.fromEntries(new FormData(f).entries());
+  const qty = Math.max(1, Number(v.quantity || 1));
+  const totalPrice = Number(v.total_price || 0);
+  const initialPaid = Number(v.amount_paid || 0);
+  const status = (!isCancelledStatus(v.status) && totalPrice > 0 && initialPaid >= totalPrice)
+    ? 'Completed / Paid in Full'
+    : v.status;
+
+  const record = {
+    layby_ref: v.layby_ref.trim(),
+    start_date: v.start_date,
+    customer_name: v.customer_name.trim(),
+    phone: v.phone.trim(),
+    product_name: v.product_name.trim(),
+    quantity: qty,
+    total_price: totalPrice,
+    amount_paid: initialPaid,
+    status: status,
+    due_date: v.due_date || '',
+    notes: v.notes.trim()
+  };
+
+  const { error } = await supabase.from('shop_laybys').insert([record]);
+  if(error){ notice('Could not save lay-by plan: '+error.message, true); return; }
+
+  if(!isCancelledStatus(status)){
+    await adjustInventoryStock(record.product_name, -qty);
+  }
+  f.reset();
+  $('laybyQtyInput').value = '1';
+  $('laybyDepositInput').value = '0';
+  notice('Lay-by plan saved to Supabase.');
+  await refreshAll();
+});
+
+$('laybyPaymentForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.currentTarget, v = Object.fromEntries(new FormData(f).entries());
+  const ref = v.layby_ref.trim();
+  const addPay = Number(v.add_payment || 0);
+  const existing = shopLaybys.find(l => String(l.layby_ref || '').trim().toLowerCase() === ref.toLowerCase());
+  if(!existing){
+    notice('No lay-by plan matched that reference.', true);
+    return;
+  }
+
+  const nextPaid = Number(existing.amount_paid || 0) + addPay;
+  const totalPrice = Number(existing.total_price || 0);
+  const resolvedStatus = nextPaid >= totalPrice && totalPrice > 0 && !isCancelledStatus(v.status)
+    ? 'Completed / Paid in Full'
+    : v.status;
+  const mergedNotes = [existing.notes, v.notes.trim()].filter(Boolean).join(' | ');
+
+  const query = existing.id
+    ? supabase.from('shop_laybys').update({ amount_paid: nextPaid, status: resolvedStatus, notes: mergedNotes }).eq('id', existing.id)
+    : supabase.from('shop_laybys').update({ amount_paid: nextPaid, status: resolvedStatus, notes: mergedNotes }).eq('layby_ref', existing.layby_ref);
+
+  const { error } = await query;
+  if(error){ notice('Could not update lay-by payment: '+error.message, true); return; }
+
+  f.reset();
+  $('laybyPaymentForm').querySelector('input[name="add_payment"]').value = '0';
+  notice('Lay-by payment updated in Supabase.');
+  await refreshAll();
+});
+
+$('shopWarrantyForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.currentTarget, v = Object.fromEntries(new FormData(f).entries());
+  const record = {
+    claim_ref: v.claim_ref.trim(),
+    claim_date: v.claim_date,
+    customer_name: v.customer_name.trim(),
+    phone: v.phone.trim(),
+    product_name: v.product_name.trim(),
+    status: v.status,
+    notes: v.notes.trim()
+  };
+  const { error } = await supabase.from('warranty_claims').insert([record]);
+  if(error){ notice('Could not save warranty claim: '+error.message, true); return; }
+  f.reset();
+  notice('Warranty claim saved to Supabase.');
+  await refreshAll();
+});
+
+$('shopExpenseForm').addEventListener('submit',e=>{
+  e.preventDefault(); const f=e.currentTarget,v=Object.fromEntries(new FormData(f).entries());
+  insertRecord('finance_entries',{entry_type:'expense',amount:Number(v.amount),category:'Shop - '+v.category.trim(),entry_date:v.entry_date,description:v.description.trim()},f);
+});
+
+$('shopOrderUpdateForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const f=e.currentTarget,v=Object.fromEntries(new FormData(f).entries());
+  const ref=v.order_ref.trim();
+  const existing=shopOrders.find(o=>String(o.order_ref||'').trim().toLowerCase()===ref.toLowerCase());
+  if(!existing){notice('No order matched that reference. Check the order reference.',true);return;}
+
+  const wasPaid=isPaidFullOrder(existing.status);
+  const nowPaid=isPaidFullOrder(v.status);
+  const orderQty=Math.max(1,Number(existing.quantity||1));
+
+  if(!wasPaid && nowPaid){
+    await adjustInventoryStock(existing.product_name, -orderQty);
+  } else if(wasPaid && !nowPaid){
+    await adjustInventoryStock(existing.product_name, orderQty);
+  }
+
+  if(existing.id){
+    const { error } = await supabase.from('shop_orders').update({
+      status:v.status,
+      courier:v.courier.trim(),
+      tracking_number:v.tracking_number.trim(),
+      notes:v.notes.trim()
+    }).eq('id',existing.id);
+    if(error){ notice('Could not update order: '+error.message, true); return; }
+  }
+
+  f.reset();
+  notice('Order and delivery details updated in Supabase.');
+  await refreshAll();
+});
+
+$('refreshBtn').addEventListener('click',refreshAll);
+
+function setShopAccess(unlocked){
+  document.body.classList.toggle('shop-unlocked',unlocked);
+  $('loginPanel').classList.toggle('hidden',unlocked);
+  $('appShell').classList.toggle('hidden',!unlocked);
+  $('menuToggle').classList.toggle('hidden',!unlocked);
+  $('mainSiteLink').classList.toggle('hidden',!unlocked);
+  $('logoutBtn').classList.toggle('hidden',!unlocked);
+  if(!unlocked){
+    closeShopMenu();
+    $('sideBackdrop')?.classList.remove('open');
+    $('loginPassword').value='';
+  }
+}
+
+$('loginForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  if($('loginPassword').value!==OWNER_PASSWORD){
+    $('loginMessage').textContent='Incorrect password. Please try again.';
+    $('loginPassword').focus();
+    return;
+  }
+  sessionStorage.setItem('jayShopTrackingUnlocked','yes');
+  $('loginMessage').textContent='';
+  setShopAccess(true);
+  initPeriodControls();
+  showView('shop-overview');
+  refreshAll();
+});
+
+$('logoutBtn').addEventListener('click',()=>{
+  sessionStorage.removeItem('jayShopTrackingUnlocked');
+  setShopAccess(false);
+  $('loginMessage').textContent='';
+});
+
+const shopSessionUnlocked = sessionStorage.getItem('jayShopTrackingUnlocked')==='yes';
+setShopAccess(shopSessionUnlocked);
+if(shopSessionUnlocked){
+  initPeriodControls();
+  showView('shop-overview');
+  refreshAll();
+}
+</script>
+</body>
+</html>
